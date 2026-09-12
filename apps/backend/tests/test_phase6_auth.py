@@ -15,7 +15,6 @@ This suite:
 Uses `auth_client` from conftest — real JWT auth enforced (no overrides).
 """
 
-
 from jose import jwt
 
 from app.services.auth_service import (
@@ -231,9 +230,7 @@ class TestInspectorRole:
             },
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert res.status_code == 403, (
-            "Inspector must not be able to call the override endpoint."
-        )
+        assert res.status_code == 403, "Inspector must not be able to call the override endpoint."
         assert res.json()["detail"]["code"] == "INSUFFICIENT_ROLE"
 
 

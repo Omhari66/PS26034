@@ -220,8 +220,7 @@ class TestNotVerifiableState:
         for ev in evidences:
             if ev.field_name == "mrp":  # mrp is in the blocks
                 assert ev.state == EvidenceState.NOT_VERIFIABLE, (
-                    f"Expected NOT_VERIFIABLE for {ev.field_name} without secondary, "
-                    f"got {ev.state}"
+                    f"Expected NOT_VERIFIABLE for {ev.field_name} without secondary, got {ev.state}"
                 )
 
     def test_not_verifiable_still_carries_primary_value(self):

@@ -24,22 +24,22 @@ import numpy as np
 from PIL import Image
 
 # --- Thresholds (tunable in Phase 5) ---
-_SHARP_HIGH = 150.0   # Laplacian variance → very sharp
-_SHARP_LOW = 15.0     # below this → likely blurry (relaxed for real phone photos)
-_BRIGHT_MIN = 20.0    # mean gray < 20 → too dark
-_BRIGHT_MAX = 240.0   # mean gray > 240 → over-exposed
+_SHARP_HIGH = 150.0  # Laplacian variance → very sharp
+_SHARP_LOW = 15.0  # below this → likely blurry (relaxed for real phone photos)
+_BRIGHT_MIN = 20.0  # mean gray < 20 → too dark
+_BRIGHT_MAX = 240.0  # mean gray > 240 → over-exposed
 _RES_MIN_PX = 200 * 150  # minimum accepted resolution (relaxed for demo)
 
 
 @dataclass(frozen=True)
 class QualityResult:
-    quality: str     # "high" | "medium" | "low"
-    accepted: bool   # True for high/medium; False for low
-    sharpness: float   # Laplacian variance score
+    quality: str  # "high" | "medium" | "low"
+    accepted: bool  # True for high/medium; False for low
+    sharpness: float  # Laplacian variance score
     brightness: float  # mean pixel intensity (0–255)
     width: int
     height: int
-    reason: str        # human-readable quality note
+    reason: str  # human-readable quality note
 
 
 def _laplacian_variance(gray: np.ndarray) -> float:
@@ -50,10 +50,10 @@ def _laplacian_variance(gray: np.ndarray) -> float:
     """
     lap = (
         4.0 * gray[1:-1, 1:-1]
-        - gray[1:-1, :-2]   # left
-        - gray[1:-1, 2:]    # right
-        - gray[:-2, 1:-1]   # top
-        - gray[2:, 1:-1]    # bottom
+        - gray[1:-1, :-2]  # left
+        - gray[1:-1, 2:]  # right
+        - gray[:-2, 1:-1]  # top
+        - gray[2:, 1:-1]  # bottom
     )
     return float(np.var(lap))
 
