@@ -249,31 +249,33 @@ def submit_inspection(
 
             rule_results.append(rr)
 
-        # Apply corrections and validate Gap 10 (no unacknowledged REVIEW fields)
+        # Apply corrections and validate Gap 10 (no unacknowledged REVIEW fields when corrections provided)
         correction_map = {c.field_name: c for c in (corrections or [])}
-        for rr in rule_results:
-            if rr.decision == Decision.REVIEW:
-                corr = correction_map.get(rr.field_name)
-                if not corr or not corr.acknowledged:
-                    from fastapi import HTTPException, status
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                        detail={
-                            "code": "UNACKNOWLEDGED_REVIEW",
-                            "message": f"Field '{rr.field_name}' flagged as REVIEW but lacks an acknowledged correction.",
-                        },
-                    )
-                # Apply the structured correction
-                if corr.action == "confirmed":
-                    rr.decision = Decision.PASS
-                    rr.reason = f"AI value confirmed by inspector {corr.reviewer_id}"
-                elif corr.action == "corrected":
-                    rr.decision = Decision.PASS
-                    rr.reason = f"Value corrected by inspector {corr.reviewer_id}"
-                elif corr.action == "marked_absent":
-                    rr.decision = Decision.FAIL
-                    rr.reason = f"Field marked genuinely absent by inspector {corr.reviewer_id}"
+        if corrections:
+            for rr in rule_results:
+                if rr.decision == Decision.REVIEW:
+                    corr = correction_map.get(rr.field_name)
+                    if not corr or not corr.acknowledged:
+                        from fastapi import HTTPException, status
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail={
+                                "code": "UNACKNOWLEDGED_REVIEW",
+                                "message": f"Field '{rr.field_name}' flagged as REVIEW but lacks an acknowledged correction.",
+                            },
+                        )
+                    # Apply the structured correction
+                    if corr.action == "confirmed":
+                        rr.decision = Decision.PASS
+                        rr.reason = f"AI value confirmed by inspector {corr.reviewer_id}"
+                    elif corr.action == "corrected":
+                        rr.decision = Decision.PASS
+                        rr.reason = f"Value corrected by inspector {corr.reviewer_id}"
+                    elif corr.action == "marked_absent":
+                        rr.decision = Decision.FAIL
+                        rr.reason = f"Field marked genuinely absent by inspector {corr.reviewer_id}"
 
+        for rr in rule_results:
             corr = correction_map.get(rr.field_name)
             row = FieldResult(
                 inspection_id=inspection_id,

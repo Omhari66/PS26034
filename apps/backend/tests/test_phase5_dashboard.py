@@ -20,11 +20,19 @@ Uses the shared `client` fixture from conftest.py (SQLite in-memory DB).
 # Helpers — build a submitted inspection we can review
 # ---------------------------------------------------------------------------
 
+_FIELD_VALUES = {
+    "mrp": "150.00",
+    "net_quantity": "100 g",
+    "manufacturing_date": "01/2026",
+    "manufacturer_name": '[{"role": "Manufactured by", "entity": "Test Corp"}]',
+    "consumer_care": "care@test.com",
+}
+
 _PASS_EVIDENCE = [
     {
         "field_name": f,
         "state": "FOUND",
-        "value": "test-value",
+        "value": _FIELD_VALUES[f],
         "ocr_confidence": 0.95,
         "source_image": "front.jpg",
     }
@@ -37,7 +45,7 @@ _REVIEW_EVIDENCE = [
         "state": "CONFLICTING",
         "candidates": ["149.00", "199.00"],
     }
-]
+] + [e for e in _PASS_EVIDENCE if e["field_name"] != "mrp"]
 
 
 def _create_submitted(client, category: str = "packaged_food", evidence=None) -> str:
