@@ -82,25 +82,25 @@ _ALL_FIELDS_BLOCKS = [
 class TestPipelineOutputStructure:
     def test_returns_one_evidence_per_field(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         assert len(evidences) == len(CRITICAL_FIELDS)
 
     def test_all_fields_covered(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         field_names = {ev.field_name for ev in evidences}
         assert field_names == CRITICAL_FIELDS
 
     def test_evidence_states_are_valid_enum_values(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         valid_states = {e.value for e in EvidenceState}
         for ev in evidences:
             assert ev.state.value in valid_states
 
     def test_empty_image_list_returns_all_not_found(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline([], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline([], primary_engine=engine, secondary_engine=engine)
         assert len(evidences) == len(CRITICAL_FIELDS)
         assert all(ev.state == EvidenceState.NOT_FOUND for ev in evidences)
 
@@ -113,7 +113,7 @@ class TestPipelineOutputStructure:
 class TestFoundState:
     def test_all_fields_found_when_all_present(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         # MRP should be found
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
         assert mrp_ev.state == EvidenceState.FOUND
@@ -121,21 +121,21 @@ class TestFoundState:
 
     def test_found_evidence_has_value(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         for ev in evidences:
             if ev.state == EvidenceState.FOUND:
                 assert ev.value is not None, f"FOUND evidence for {ev.field_name} must have value"
 
     def test_found_evidence_carries_ocr_engine_name(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
         assert mrp_ev.state == EvidenceState.FOUND
         assert mrp_ev.ocr_engine == "mock"
 
     def test_found_evidence_carries_confidence(self):
         engine = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
         assert mrp_ev.state == EvidenceState.FOUND
         assert mrp_ev.ocr_confidence is not None
@@ -151,13 +151,13 @@ class TestNotFoundState:
     def test_absent_field_is_not_found(self):
         """Only MRP in results — other 4 fields must be NOT_FOUND."""
         engine = MockOCREngine([_r("MRP: Rs. 149.00")])
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         not_found = [e for e in evidences if e.field_name != "mrp"]
         assert all(ev.state == EvidenceState.NOT_FOUND for ev in not_found)
 
     def test_not_found_has_no_value(self):
         engine = MockOCREngine([_r("Random text with no field keywords")])
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=engine, secondary_engine=engine)
         for ev in evidences:
             if ev.state == EvidenceState.NOT_FOUND:
                 assert ev.value is None
@@ -173,7 +173,7 @@ class TestConflictingState:
         """Primary reads Rs.49, secondary reads Rs.149 → CONFLICTING for MRP."""
         primary = MockOCREngine([_r("MRP: Rs. 49.00")])
         secondary = MockOCREngine([_r("MRP: Rs. 149.00")])
-        evidences = run_pipeline(
+        evidences, _ = run_pipeline(
             ["dummy.jpg"], primary_engine=primary, secondary_engine=secondary
         )
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
@@ -183,7 +183,7 @@ class TestConflictingState:
         """CONFLICTING evidence must not commit to a single value."""
         primary = MockOCREngine([_r("MRP: Rs. 49.00")])
         secondary = MockOCREngine([_r("MRP: Rs. 149.00")])
-        evidences = run_pipeline(
+        evidences, _ = run_pipeline(
             ["dummy.jpg"], primary_engine=primary, secondary_engine=secondary
         )
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
@@ -194,7 +194,7 @@ class TestConflictingState:
         """Candidates must show both readings so reviewer can see both."""
         primary = MockOCREngine([_r("MRP: Rs. 49.00")])
         secondary = MockOCREngine([_r("MRP: Rs. 149.00")])
-        evidences = run_pipeline(
+        evidences, _ = run_pipeline(
             ["dummy.jpg"], primary_engine=primary, secondary_engine=secondary
         )
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
@@ -215,7 +215,7 @@ class TestNotVerifiableState:
         rather than FOUND — this satisfies CONTRACTS.md #2 honestly.
         """
         primary = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=primary, secondary_engine=None)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=primary, secondary_engine=None)
         # Fields found by primary but without cross-check → NOT_VERIFIABLE
         for ev in evidences:
             if ev.field_name == "mrp":  # mrp is in the blocks
@@ -227,7 +227,7 @@ class TestNotVerifiableState:
     def test_not_verifiable_still_carries_primary_value(self):
         """NOT_VERIFIABLE should store the primary reading for context."""
         primary = MockOCREngine([_r("MRP: Rs. 149.00")])
-        evidences = run_pipeline(["dummy.jpg"], primary_engine=primary, secondary_engine=None)
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=primary, secondary_engine=None)
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
         assert mrp_ev.state == EvidenceState.NOT_VERIFIABLE
         assert mrp_ev.value is not None  # primary reading preserved
@@ -245,7 +245,7 @@ class TestMultipleImages:
         Pipeline should find all 5 (aggregate across images).
         """
         all_blocks = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences = run_pipeline(
+        evidences, _ = run_pipeline(
             ["img1.jpg", "img2.jpg"],
             primary_engine=all_blocks,
             secondary_engine=all_blocks,
