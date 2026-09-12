@@ -1,0 +1,77 @@
+{
+  "_comment": "Versioned rule table for PS 26034 — Legal Metrology (Packaged Commodities) Rules 2011.",
+  "_format_version": "1",
+  "rule_version": "v1.0",
+  "effective_date": "2026-09-01",
+  "rules": [
+    {
+      "rule_id": "LM-MRP-001",
+      "field": "mrp",
+      "declaration": "Maximum Retail Price",
+      "legal_ref": "Rule 6(1)(c) — LM(PC) Rules 2011",
+      "description": "MRP must be declared in full (inclusive of all taxes) in Indian rupees."
+    },
+    {
+      "rule_id": "LM-NQ-001",
+      "field": "net_quantity",
+      "declaration": "Net Quantity / Net Weight / Net Volume",
+      "legal_ref": "Rule 6(1)(a) — LM(PC) Rules 2011",
+      "description": "Net quantity must be declared with standard unit (g, kg, ml, l, etc.)."
+    },
+    {
+      "rule_id": "LM-MD-001",
+      "field": "manufacturing_date",
+      "declaration": "Month and Year of Manufacture / Packing",
+      "legal_ref": "Rule 6(1)(f) — LM(PC) Rules 2011",
+      "description": "Month and year of manufacture or packing must be declared."
+    },
+    {
+      "rule_id": "LM-MN-001",
+      "field": "manufacturer_name",
+      "declaration": "Manufacturer / Packer / Importer Name and Address",
+      "legal_ref": "Rule 6(1)(b) — LM(PC) Rules 2011",
+      "description": "Full name and complete address of manufacturer, packer, or importer."
+    },
+    {
+      "rule_id": "LM-CC-001",
+      "field": "consumer_care",
+      "declaration": "Consumer Care / Grievance Redressal Contact",
+      "legal_ref": "Rule 6(1)(k) — LM(PC) Rules 2011",
+      "description": "Consumer care contact (phone/email) must be provided."
+    }
+  ],
+  "categories": {
+    "packaged_food": {
+      "label": "Packaged Food",
+      "required_fields": ["mrp", "net_quantity", "manufacturing_date", "manufacturer_name", "consumer_care"],
+      "notes": "All 5 declarations mandatory under Schedule II."
+    },
+    "packaged_commodity": {
+      "label": "Packaged Commodity (General)",
+      "required_fields": ["mrp", "net_quantity", "manufacturing_date", "manufacturer_name", "consumer_care"],
+      "notes": "All 5 declarations mandatory under LM(PC) Rules 2011."
+    },
+    "cosmetics": {
+      "label": "Cosmetics & Toiletries",
+      "required_fields": ["mrp", "net_quantity", "manufacturing_date", "manufacturer_name", "consumer_care"],
+      "notes": "All 5 required. Best-before date applies but is not in MVP scope."
+    },
+    "drugs_pharma": {
+      "label": "Drugs & Pharmaceuticals",
+      "required_fields": ["mrp", "net_quantity", "manufacturing_date", "manufacturer_name"],
+      "optional_fields": ["consumer_care"],
+      "notes": "Consumer care not mandated under Drugs Rules; manufacturer contact sufficient."
+    },
+    "textiles": {
+      "label": "Textiles & Garments",
+      "required_fields": ["mrp", "manufacturer_name"],
+      "optional_fields": ["net_quantity", "manufacturing_date", "consumer_care"],
+      "notes": "Net quantity and date not typically applicable for textiles; MRP and manufacturer required."
+    },
+    "beverages": {
+      "label": "Beverages",
+      "required_fields": ["mrp", "net_quantity", "manufacturing_date", "manufacturer_name", "consumer_care"],
+      "notes": "All 5 declarations mandatory; best-before applies but not in MVP scope."
+    }
+  }
+}

@@ -1,0 +1,5 @@
+# Uploaded product images — not committed to version control.
+# The directory itself is tracked (via .gitkeep) so uv/docker can create it.
+*
+!.gitkeep
+!.gitignore

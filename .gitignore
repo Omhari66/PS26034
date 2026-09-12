@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.pytest_cache/
+.ruff_cache/
+uv.lock
+# Don't commit uv.lock to gitignore in production — remove this line once
+# the team decides on lockfile policy.
+
+# Environment
+.env
+*.env.local
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Next.js
+apps/dashboard/.next/
+apps/dashboard/out/
+
+# Expo / React Native
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+
+# Alembic
+apps/backend/alembic/versions/*.py
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

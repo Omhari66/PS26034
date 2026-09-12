@@ -1,0 +1,19 @@
+{
+  "name": "ps26034",
+  "private": true,
+  "description": "PS 26034 — AI-assisted Legal Metrology inspection platform (monorepo root)",
+  "scripts": {
+    "dev:backend": "cd apps/backend && uvicorn main:app --reload",
+    "dev:dashboard": "pnpm --filter @ps26034/dashboard dev",
+    "dev:mobile": "pnpm --filter @ps26034/mobile start",
+    "typecheck": "pnpm --filter @ps26034/dashboard typecheck && pnpm --filter @ps26034/mobile typecheck",
+    "lint": "pnpm --filter @ps26034/dashboard lint && pnpm --filter @ps26034/mobile lint"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "pnpm": {
+    "allowBuild": ["unrs-resolver"]
+  }
+}
