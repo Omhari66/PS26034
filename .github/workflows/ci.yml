@@ -60,7 +60,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --allow-scripts
 
       - name: TypeScript typecheck
         run: pnpm typecheck
@@ -88,7 +88,7 @@ jobs:
           cache: "pnpm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --allow-scripts
 
       - name: TypeScript typecheck
         run: pnpm typecheck
