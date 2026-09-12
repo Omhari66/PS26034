@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "phase": "Phase 2.5 Calibration",
+  "owner": "Rahman (Member 5 - Legal Metrology)",
+  "samples": [
+    {
+      "sample_id": "PKG-001",
+      "brand": "Parle-G",
+      "category": "Biscuits & Confectionery",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "10.00",
+        "net_quantity": "130g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Parle Biscuits Pvt Ltd",
+        "consumer_care": "1800-222-211"
+      },
+      "adversarial_notes": "None - Standard compliant control sample"
+    },
+    {
+      "sample_id": "PKG-002",
+      "brand": "Local Spice Blend",
+      "category": "Spices & Condiments",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": false
+      },
+      "ground_truth": {
+        "mrp": "45.00",
+        "net_quantity": "100g",
+        "manufacturing_date": "05/2026",
+        "manufacturer": "Marketed by Spice Traders India",
+        "consumer_care": null
+      },
+      "adversarial_notes": "Adversarial: Genuinely missing Consumer Care number and missing 'Manufactured by' entity (has Marketed by only). Must FAIL under full coverage."
+    }
+  ]
+}
