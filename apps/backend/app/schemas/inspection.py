@@ -34,7 +34,7 @@ class FieldEvidenceIn(BaseModel):
     value: str | None = None
     source_image: str | None = None
     # (x1, y1, x2, y2) in original image pixel coordinates
-    bbox: tuple[int, int, int, int] | None = None
+    bbox: tuple[int, int, int, int] | list[int] | None = None
     ocr_engine: str | None = None
     ocr_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     secondary_value: str | None = None
@@ -52,7 +52,7 @@ class FieldEvidenceOut(BaseModel):
     state: EvidenceState
     value: str | None = None
     source_image: str | None = None
-    bbox: tuple[int, int, int, int] | None = None
+    bbox: tuple[int, int, int, int] | list[int] | None = None
     ocr_engine: str | None = None
     ocr_confidence: float | None = None
     secondary_value: str | None = None
@@ -221,3 +221,36 @@ class InspectionListOut(BaseModel):
     """Paginated inspection list response."""
     items: list[InspectionListItem]
     total: int
+
+
+class InspectionImageMetaOut(BaseModel):
+    id: str
+    inspection_id: str
+    role: str
+    quality: str
+    accepted: bool
+    url: str
+    original_width: int | None = None
+    original_height: int | None = None
+
+
+class DecisionQualityFieldTrigger(BaseModel):
+    field_name: str
+    review_count: int
+    percentage: float
+
+
+class DecisionQualityAnalyticsOut(BaseModel):
+    """
+    Phase 9 / Gap 4: Decision Quality Tracking.
+    Tracks review rate, supervisor override rate, decision breakdown, and top review fields.
+    """
+    total_inspections: int
+    review_count: int
+    review_rate_percentage: float
+    overridden_reviews_count: int
+    confirmed_reviews_count: int
+    override_rate_percentage: float
+    decision_counts: dict[str, int]
+    top_review_trigger_fields: list[DecisionQualityFieldTrigger]
+

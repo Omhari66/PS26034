@@ -75,6 +75,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from pathlib import Path  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+# Mount static images directory for web dashboard evidence viewer
+_images_dir = Path(__file__).parent / "app" / "data" / "images"
+_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static/images", StaticFiles(directory=str(_images_dir)), name="static_images")
+
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(inspections.router, prefix="/api/v1")
 app.include_router(rules.router, prefix="/api/v1")

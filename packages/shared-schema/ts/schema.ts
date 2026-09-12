@@ -77,6 +77,7 @@ export interface RuleResult {
 // ---------------------------------------------------------------------------
 
 export interface InspectionReport {
+  inspection_id: string;
   product_id: string;
   category: string;
   rule_version: string;
