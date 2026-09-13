@@ -1,8 +1,4 @@
-# GitHub Issues Backlog (Copy & Paste)
-
-*Instructions: Open GitHub, go to the "Issues" tab, and click "New Issue". Copy and paste the text block for each task below into the description box. Assign the issue to the named team member on the right side.*
-
----
+# GitHub Issues Backlog 
 
 ## 📱 Mobile App (Assign to: Arpan & Omkar)
 
