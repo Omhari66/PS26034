@@ -76,6 +76,7 @@ app.add_middleware(
 )
 
 from pathlib import Path  # noqa: E402
+
 from fastapi.staticfiles import StaticFiles  # noqa: E402
 
 # Mount static images directory for web dashboard evidence viewer
