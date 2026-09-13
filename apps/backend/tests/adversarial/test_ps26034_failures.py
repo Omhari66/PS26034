@@ -21,11 +21,12 @@ Running
   cd apps/backend
   uv run pytest tests/adversarial/ -v
 """
-
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+
+import pytest
 
 # Path setup
 _ROOT = Path(__file__).parents[3]
@@ -40,10 +41,10 @@ from packages.shared_schema import (  # noqa: E402
     evaluate_field,
 )
 
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
 
 def _ev(field, state, value=None, confidence=None):
     return FieldEvidence(
@@ -55,7 +56,7 @@ def _ev(field, state, value=None, confidence=None):
 
 
 FULL_COVERAGE = {"front": True, "back": True, "close_up": True}
-FRONT_ONLY = {"front": True, "back": False, "close_up": False}
+FRONT_ONLY    = {"front": True, "back": False, "close_up": False}
 
 
 # ---------------------------------------------------------------------------
@@ -85,12 +86,8 @@ def test_02_offer_price_not_selected_as_mrp():
     from app.ocr.engines.base import OCRResult
     from app.ocr.field_extractor import extract_field
 
-    offer_block = OCRResult(
-        text="Offer Price Rs.149", bbox=(10, 10, 200, 40), confidence=0.96, engine_name="test"
-    )
-    mrp_block = OCRResult(
-        text="MRP Rs.199", bbox=(10, 50, 200, 80), confidence=0.92, engine_name="test"
-    )
+    offer_block = OCRResult(text="Offer Price Rs.149", bbox=(10, 10, 200, 40), confidence=0.96, engine_name="test")
+    mrp_block   = OCRResult(text="MRP Rs.199", bbox=(10, 50, 200, 80), confidence=0.92, engine_name="test")
 
     result = extract_field("mrp", [offer_block, mrp_block])
     assert result is not None
@@ -156,22 +153,17 @@ def test_06_mfg_date_distinct_from_best_before():
     from app.ocr.engines.base import OCRResult
     from app.ocr.field_extractor import extract_field
 
-    mfd = OCRResult(
-        text="Manufactured: 08/2026", bbox=(10, 10, 200, 40), confidence=0.93, engine_name="test"
-    )
-    bbd = OCRResult(
-        text="Best Before: 12 months from mfg",
-        bbox=(10, 50, 200, 80),
-        confidence=0.91,
-        engine_name="test",
-    )
+    mfd = OCRResult(text="Manufactured: 08/2026", bbox=(10,10,200,40), confidence=0.93, engine_name="test")
+    bbd = OCRResult(text="Best Before: 12 months from mfg", bbox=(10,50,200,80), confidence=0.91, engine_name="test")
 
     result = extract_field("manufacturing_date", [mfd, bbd])
     assert result is not None, "No manufacturing date extracted at all"
     assert "Best Before" not in result.source_result.text, (
         "Manufacturing date result came from the 'Best Before' block."
     )
-    assert "2026" in result.raw_value, f"Expected MFD 08/2026, got '{result.raw_value}'"
+    assert "2026" in result.raw_value, (
+        f"Expected MFD 08/2026, got '{result.raw_value}'"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -190,23 +182,17 @@ def test_07_consumer_care_not_confused_with_sales_number():
     from app.ocr.engines.base import OCRResult
     from app.ocr.field_extractor import extract_field
 
-    care_block = OCRResult(
-        text="Customer Care: 1800-123-4567",
-        bbox=(10, 10, 300, 40),
-        confidence=0.94,
-        engine_name="test",
-    )
-    sales_block = OCRResult(
-        text="Call Sales Team: 9876543210",
-        bbox=(10, 50, 300, 80),
-        confidence=0.96,
-        engine_name="test",
-    )
+    care_block  = OCRResult(text="Customer Care: 1800-123-4567", bbox=(10,10,300,40), confidence=0.94, engine_name="test")
+    sales_block = OCRResult(text="Call Sales Team: 9876543210", bbox=(10,50,300,80), confidence=0.96, engine_name="test")
 
     result = extract_field("consumer_care", [care_block, sales_block])
     assert result is not None
-    assert "9876543210" not in result.raw_value, "Sales phone number was returned as Consumer Care."
-    assert "1800" in result.raw_value, f"Expected toll-free number, got '{result.raw_value}'"
+    assert "9876543210" not in result.raw_value, (
+        "Sales phone number was returned as Consumer Care."
+    )
+    assert "1800" in result.raw_value, (
+        f"Expected toll-free number, got '{result.raw_value}'"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -223,19 +209,16 @@ def test_08_single_engine_gives_review_not_pass():
     tracked in PHASES.md Phase 3.
     """
     from unittest.mock import MagicMock
-
     from app.ocr.pipeline import run_pipeline
 
     primary = MagicMock()
     primary.name = "mock"
     primary.recognize.return_value = [
-        MagicMock(text="MRP Rs.199", bbox=(10, 10, 200, 40), confidence=0.91, engine_name="mock")
+        MagicMock(text="MRP Rs.199", bbox=(10,10,200,40), confidence=0.91, engine_name="mock")
     ]
 
     # Directly passing None works correctly at the pipeline level:
-    evidences, _ = run_pipeline(
-        image_paths=["fake.jpg"], primary_engine=primary, secondary_engine=None
-    )
+    evidences, _ = run_pipeline(image_paths=["fake.jpg"], primary_engine=primary, secondary_engine=None)
     mrp_ev = next((e for e in evidences if e.field_name == "mrp"), None)
     assert mrp_ev is not None
     assert mrp_ev.state == EvidenceState.NOT_VERIFIABLE, (
@@ -277,9 +260,7 @@ def test_10_all_low_confidence_overall_review():
     for field, rule_id in fields_rules.items():
         ev = _ev(field, EvidenceState.FOUND, value="x", confidence=0.45)
         rr = evaluate_field(ev, rule_id, "v1.0", required=True, coverage=FULL_COVERAGE)
-        assert rr.decision == Decision.REVIEW, (
-            f"{field}: conf=0.45 gave {rr.decision}, expected REVIEW"
-        )
+        assert rr.decision == Decision.REVIEW, f"{field}: conf=0.45 gave {rr.decision}, expected REVIEW"
         results.append(rr)
 
     overall = aggregate_overall(results)
