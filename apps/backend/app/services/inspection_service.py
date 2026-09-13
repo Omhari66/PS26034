@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from app.schemas.inspection import (
         AnalyzeResponse,
         AuditTrailOut,
+        DecisionQualityAnalyticsOut,
         FieldCorrection,
         InspectionListOut,
         ReviewRecordOut,
@@ -257,7 +258,8 @@ def submit_inspection(
 
             rule_results.append(rr)
 
-        # Apply corrections and validate Gap 10 (no unacknowledged REVIEW fields when corrections provided)
+        # Apply corrections and validate Gap 10
+        # (no unacknowledged REVIEW fields when corrections provided)
         correction_map = {c.field_name: c for c in (corrections or [])}
         for rr in rule_results:
             if rr.decision == Decision.REVIEW:
@@ -716,6 +718,7 @@ def list_inspections(
 def get_inspection_images(db: Session, inspection_id: str) -> list:
     """Return image metadata list including web-accessible URLs for bounding box viewer."""
     from pathlib import Path  # noqa: PLC0415
+
     from app.models import InspectionImage  # noqa: PLC0415
     from app.schemas.inspection import InspectionImageMetaOut  # noqa: PLC0415
 
@@ -745,13 +748,14 @@ def get_inspection_images(db: Session, inspection_id: str) -> list:
     return results
 
 
-def get_decision_quality_analytics(db: Session) -> "DecisionQualityAnalyticsOut":
+def get_decision_quality_analytics(db: Session) -> DecisionQualityAnalyticsOut:
     """
     Phase 9 (Gap 4): Decision Quality Tracking.
     Calculates review rate, supervisor override rate, decision breakdown, and top review fields.
     """
     from collections import Counter  # noqa: PLC0415
-    from app.models import FieldResult, InspectionImage, ReviewRecord  # noqa: PLC0415
+
+    from app.models import FieldResult, ReviewRecord  # noqa: PLC0415
     from app.schemas.inspection import (  # noqa: PLC0415
         DecisionQualityAnalyticsOut,
         DecisionQualityFieldTrigger,
@@ -770,7 +774,9 @@ def get_decision_quality_analytics(db: Session) -> "DecisionQualityAnalyticsOut"
             review_inspection_ids.add(insp.id)
 
     review_count = len(review_inspection_ids)
-    review_rate_percentage = round((review_count / total_inspections * 100), 2) if total_inspections > 0 else 0.0
+    review_rate_percentage = (
+        round((review_count / total_inspections * 100), 2) if total_inspections > 0 else 0.0
+    )
 
     # Overrides
     all_overrides = db.query(ReviewRecord).all()
@@ -779,7 +785,9 @@ def get_decision_quality_analytics(db: Session) -> "DecisionQualityAnalyticsOut"
     # Count how many REVIEW inspections were overridden
     overridden_reviews_count = len(review_inspection_ids.intersection(overridden_inspection_ids))
     confirmed_reviews_count = max(0, review_count - overridden_reviews_count)
-    override_rate_percentage = round((overridden_reviews_count / review_count * 100), 2) if review_count > 0 else 0.0
+    override_rate_percentage = (
+        round((overridden_reviews_count / review_count * 100), 2) if review_count > 0 else 0.0
+    )
 
     # Top review trigger fields: count fields in review inspections where decision == REVIEW
     field_results = (

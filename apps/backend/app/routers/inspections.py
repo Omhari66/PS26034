@@ -26,7 +26,9 @@ from app.schemas.inspection import (
     AuditTrailOut,
     CreateInspectionRequest,
     CreateInspectionResponse,
+    DecisionQualityAnalyticsOut,
     ImageUploadResponse,
+    InspectionImageMetaOut,
     InspectionListOut,
     InspectionReportOut,
     ReviewRecordOut,
@@ -34,9 +36,6 @@ from app.schemas.inspection import (
     SetCategoryRequest,
     SetCategoryResponse,
     SubmitInspectionRequest,
-    AnalyzeResponse,
-    DecisionQualityAnalyticsOut,
-    InspectionImageMetaOut,
 )
 from app.services import image_service as img_svc
 from app.services import inspection_service as svc
