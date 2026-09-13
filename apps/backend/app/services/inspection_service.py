@@ -23,10 +23,10 @@ if TYPE_CHECKING:
     from app.schemas.inspection import (
         AnalyzeResponse,
         AuditTrailOut,
+        DecisionQualityAnalyticsOut,
         FieldCorrection,
         InspectionListOut,
         ReviewRecordOut,
-        DecisionQualityAnalyticsOut,
     )
 
 from packages.shared_schema import (  # noqa: E402
