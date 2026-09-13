@@ -209,7 +209,7 @@ def submit_inspection(
     inspection_id: str,
     field_evidences_in: list[FieldEvidenceIn],
     coverage: dict,
-    corrections: list["FieldCorrection"] | None = None,
+    corrections: list[FieldCorrection] | None = None,
 ) -> InspectionReportOut | None:
     """
     Run the rule engine on the submitted evidence and store the report.
@@ -367,7 +367,7 @@ def submit_via_ocr(
     db: Session,
     inspection_id: str,
     image_paths: list[str],
-    corrections: list["FieldCorrection"] | None = None,
+    corrections: list[FieldCorrection] | None = None,
 ) -> InspectionReportOut | None:
     """
     Phase 2 submission path: run OCR pipeline → FieldEvidence → rule engine.
@@ -453,7 +453,7 @@ def analyze_via_ocr(
     db: Session,
     inspection_id: str,
     image_paths: list[str],
-) -> "AnalyzeResponse" | None:
+) -> AnalyzeResponse | None:
     """
     Phase 3.5: Run the OCR pipeline and rule engine, returning a draft AnalyzeResponse.
     Does NOT persist a final InspectionReport to the DB.
@@ -570,7 +570,7 @@ def create_review(
     reviewer_id: str,
     overridden_decision: str,
     reason: str,
-) -> "ReviewRecordOut | None":
+) -> ReviewRecordOut | None:
     """
     Create a supervisor override record.
 
@@ -611,7 +611,7 @@ def create_review(
 def get_audit_trail(
     db: Session,
     inspection_id: str,
-) -> "AuditTrailOut | None":
+) -> AuditTrailOut | None:
     """
     Return the full audit trail: original report + all ReviewRecords in order.
 
@@ -654,7 +654,7 @@ def list_inspections(
     date_to: str | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> "InspectionListOut":
+) -> InspectionListOut:
     """
     Paginated inspection list for the dashboard.
     Supports filtering by status, category, decision, inspector, and date range.
