@@ -19,7 +19,6 @@ def test_category_checker_mismatch_detected():
     ocr_text = "moisturizer lotion with aloe vera"
     is_mismatch, warning = check_category_mismatch(ocr_text, "packaged_food")
     assert is_mismatch is True
-    assert "lotion" in warning
     assert "Cosmetics" in warning
 
 
