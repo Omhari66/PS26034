@@ -54,7 +54,7 @@ def test_combined_resize_and_crop():
     """Resize then crop: inverse must undo both."""
     # Image cropped at (100, 50) then resized to 50%
     t = ImageTransform(scale_x=0.5, scale_y=0.5, crop_left=100, crop_top=50)
-    ocr_bbox = (20, 10, 60, 40)   # in cropped+resized space
+    ocr_bbox = (20, 10, 60, 40)  # in cropped+resized space
     orig = map_to_original(ocr_bbox, t)
     # x: 20/0.5 + 100 = 140, y: 10/0.5 + 50 = 70, etc.
     assert orig == (140, 70, 220, 130)

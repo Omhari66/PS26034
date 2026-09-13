@@ -1,4 +1,4 @@
-﻿"""
+"""
 app/ocr/engines/tesseract_engine.py
 
 Tesseract OCR adapter — secondary cross-check engine for PS 26034.
@@ -12,8 +12,11 @@ Install:
   winget install UB-Mannheim.TesseractOCR -e
   uv add pytesseract pillow
 """
+
 from __future__ import annotations
+
 from pathlib import Path
+
 from app.ocr.engines.base import OCRResult
 
 _NAME = "tesseract"
@@ -69,9 +72,11 @@ class TesseractEngine:
     def recognize(self, image_path: str) -> list[OCRResult]:
         """Full-image OCR. Returns one OCRResult per recognised word."""
         from PIL import Image
+
         image = Image.open(image_path).convert("RGB")
         data = self._pytesseract.image_to_data(
-            image, lang=self._lang,
+            image,
+            lang=self._lang,
             output_type=self._pytesseract.Output.DICT,
         )
         results: list[OCRResult] = []
@@ -81,21 +86,27 @@ class TesseractEngine:
             if not text or conf < 0:
                 continue
             x, y, w, h = data["left"][i], data["top"][i], data["width"][i], data["height"][i]
-            results.append(OCRResult(
-                text=text, bbox=(x, y, x + w, y + h),
-                confidence=float(conf) / 100.0, engine_name=_NAME,
-            ))
+            results.append(
+                OCRResult(
+                    text=text,
+                    bbox=(x, y, x + w, y + h),
+                    confidence=float(conf) / 100.0,
+                    engine_name=_NAME,
+                )
+            )
         return results
 
     def recognize_region(self, image_path: str, bbox: tuple) -> list[OCRResult]:
         """Crop + upscale a region and OCR it. Used for cross-checking a specific candidate bbox."""
         from PIL import Image
+
         image = Image.open(image_path).convert("RGB")
         x1, y1, x2, y2 = bbox
         cropped = image.crop((x1, y1, x2, y2))
         upscaled = cropped.resize((cropped.width * 2, cropped.height * 2), Image.LANCZOS)
         data = self._pytesseract.image_to_data(
-            upscaled, lang=self._lang,
+            upscaled,
+            lang=self._lang,
             output_type=self._pytesseract.Output.DICT,
         )
         results: list[OCRResult] = []
@@ -108,8 +119,12 @@ class TesseractEngine:
             by = y1 + data["top"][i] // 2
             bw = data["width"][i] // 2
             bh = data["height"][i] // 2
-            results.append(OCRResult(
-                text=text, bbox=(bx, by, bx + bw, by + bh),
-                confidence=float(conf) / 100.0, engine_name=_NAME,
-            ))
+            results.append(
+                OCRResult(
+                    text=text,
+                    bbox=(bx, by, bx + bw, by + bh),
+                    confidence=float(conf) / 100.0,
+                    engine_name=_NAME,
+                )
+            )
         return results

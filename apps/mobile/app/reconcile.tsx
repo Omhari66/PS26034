@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.text,
+    color: Colors.textPrimary,
     marginBottom: 20,
   },
   subtitle: {
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: Colors.text,
+    shadowColor: Colors.textPrimary,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
   fieldName: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text,
+    color: Colors.textPrimary,
     marginBottom: 4,
   },
   reason: {
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   },
   extractedValue: {
     fontSize: 14,
-    color: Colors.text,
+    color: Colors.textPrimary,
     marginBottom: 12,
   },
   valueText: {
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     fontSize: 12,
     fontWeight: '500',
-    color: Colors.text,
+    color: Colors.textPrimary,
   },
   actionBtnTextActive: {
     color: Colors.white,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     padding: 12,
     fontSize: 14,
-    color: Colors.text,
+    color: Colors.textPrimary,
     backgroundColor: Colors.background,
   },
   submitBtn: {

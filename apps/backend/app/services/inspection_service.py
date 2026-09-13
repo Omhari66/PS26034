@@ -14,11 +14,19 @@ Module boundary (CONTRACTS.md #5):
   same output, always.
 """
 
+from __future__ import annotations
+
 import dataclasses
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.schemas.inspection import AuditTrailOut, InspectionListOut, ReviewRecordOut
+    from app.schemas.inspection import (
+        AnalyzeResponse,
+        AuditTrailOut,
+        FieldCorrection,
+        InspectionListOut,
+        ReviewRecordOut,
+    )
 
 from packages.shared_schema import (  # noqa: E402
     Decision,
@@ -148,9 +156,7 @@ def create_inspection(db: Session, inspector_id: str) -> Inspection:
     return inspection
 
 
-def set_category(
-    db: Session, inspection_id: str, category: str
-) -> Inspection | None:
+def set_category(db: Session, inspection_id: str, category: str) -> Inspection | None:
     """Set the inspector-confirmed category. Required before submission."""
     inspection = db.query(Inspection).filter(Inspection.id == inspection_id).first()
     if inspection is None:
@@ -203,7 +209,7 @@ def submit_inspection(
     inspection_id: str,
     field_evidences_in: list[FieldEvidenceIn],
     coverage: dict,
-    corrections: list["FieldCorrection"] | None = None,
+    corrections: list[FieldCorrection] | None = None,
 ) -> InspectionReportOut | None:
     """
     Run the rule engine on the submitted evidence and store the report.
@@ -242,9 +248,11 @@ def submit_inspection(
             rule_id = fr.rule_id if fr else f"LM-UNKNOWN-{ev_in.field_name}"
             required = fr.required if fr else False
             rr = evaluate_field(
-                ev_dc, rule_id, active_version,
+                ev_dc,
+                rule_id,
+                active_version,
                 required=required,
-                coverage=coverage,   # ← D8 fix: pass coverage so NOT_FOUND + incomplete → REVIEW
+                coverage=coverage,  # ← D8 fix: pass coverage so NOT_FOUND + incomplete → REVIEW
             )
 
             rule_results.append(rr)
@@ -256,11 +264,12 @@ def submit_inspection(
                 corr = correction_map.get(rr.field_name)
                 if not corr or not corr.acknowledged:
                     from fastapi import HTTPException, status
+
                     raise HTTPException(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail={
                             "code": "UNACKNOWLEDGED_REVIEW",
-                            "message": f"Field '{rr.field_name}' flagged as REVIEW but lacks an acknowledged correction.",
+                            "message": f"Field '{rr.field_name}' flagged as REVIEW but lacks an acknowledged correction.",  # noqa: E501
                         },
                     )
                 # Apply the structured correction
@@ -273,6 +282,9 @@ def submit_inspection(
                 elif corr.action == "marked_absent":
                     rr.decision = Decision.FAIL
                     rr.reason = f"Field marked genuinely absent by inspector {corr.reviewer_id}"
+                elif corr.action == "escalated":
+                    rr.decision = Decision.REVIEW
+                    rr.reason = f"Escalated to supervisor by inspector {corr.reviewer_id}"
 
             corr = correction_map.get(rr.field_name)
             row = FieldResult(
@@ -316,6 +328,7 @@ def submit_inspection(
 def _inspection_to_report(inspection: Inspection) -> InspectionReportOut:
     """Build an InspectionReportOut from a fully-loaded Inspection ORM row."""
     from app.schemas.inspection import FieldCorrection  # noqa: PLC0415
+
     field_results_out = []
     for fr in inspection.field_results:
         evidence_out = _evidence_from_json(fr.evidence_json)
@@ -354,7 +367,7 @@ def submit_via_ocr(
     db: Session,
     inspection_id: str,
     image_paths: list[str],
-    corrections: list["FieldCorrection"] | None = None,
+    corrections: list[FieldCorrection] | None = None,
 ) -> InspectionReportOut | None:
     """
     Phase 2 submission path: run OCR pipeline → FieldEvidence → rule engine.
@@ -382,12 +395,14 @@ def submit_via_ocr(
     tesseract_available = False
     try:
         from app.ocr.engines.tesseract_engine import TesseractEngine  # noqa: PLC0415
+
         secondary = TesseractEngine()
         tesseract_available = True
     except (RuntimeError, ImportError) as exc:
         # Tesseract binary not installed or pytesseract missing.
         # Log clearly so it surfaces in dev, not silently.
         import logging
+
         logging.getLogger(__name__).warning(
             "Tesseract secondary engine unavailable: %s. "
             "All critical fields will be single_engine_only=True (REVIEW ceiling). "
@@ -398,7 +413,7 @@ def submit_via_ocr(
     field_evidences, full_ocr_text = run_pipeline(
         image_paths=image_paths,
         primary_engine=primary,
-        secondary_engine=secondary,   # None → pipeline marks fields NOT_VERIFIABLE
+        secondary_engine=secondary,  # None → pipeline marks fields NOT_VERIFIABLE
     )
 
     # Convert FieldEvidence dataclasses → Pydantic FieldEvidenceIn.
@@ -438,15 +453,15 @@ def analyze_via_ocr(
     db: Session,
     inspection_id: str,
     image_paths: list[str],
-) -> "AnalyzeResponse" | None:
+) -> AnalyzeResponse | None:
     """
     Phase 3.5: Run the OCR pipeline and rule engine, returning a draft AnalyzeResponse.
     Does NOT persist a final InspectionReport to the DB.
     """
     from app.ocr.engines.easyocr_engine import EasyOCREngine  # noqa: PLC0415
     from app.ocr.pipeline import run_pipeline  # noqa: PLC0415
-    from app.services.category_checker import check_category_mismatch  # noqa: PLC0415
     from app.schemas.inspection import AnalyzeResponse, RuleResultOut  # noqa: PLC0415
+    from app.services.category_checker import check_category_mismatch  # noqa: PLC0415
 
     inspection = db.query(Inspection).filter(Inspection.id == inspection_id).first()
     if inspection is None:
@@ -458,6 +473,7 @@ def analyze_via_ocr(
     tesseract_available = False
     try:
         from app.ocr.engines.tesseract_engine import TesseractEngine  # noqa: PLC0415
+
         secondary = TesseractEngine()
         tesseract_available = True
     except (RuntimeError, ImportError):
@@ -495,12 +511,14 @@ def analyze_via_ocr(
             # D8 fix: if tesseract was unavailable, cap at REVIEW
             if not tesseract_available:
                 ev_dc.single_engine_only = True
-                
+
             fr = field_rule_lookup.get(ev_dc.field_name)
             rule_id = fr.rule_id if fr else f"LM-UNKNOWN-{ev_dc.field_name}"
             required = fr.required if fr else False
             rr = evaluate_field(
-                ev_dc, rule_id, active_version,
+                ev_dc,
+                rule_id,
+                active_version,
                 required=required,
                 coverage=coverage,
             )
@@ -515,7 +533,7 @@ def analyze_via_ocr(
                     evidence=evidence_out,
                 )
             )
-            
+
     is_mismatch, mismatch_warning = check_category_mismatch(full_ocr_text, category)
 
     return AnalyzeResponse(
@@ -532,11 +550,7 @@ def _build_coverage_from_images(db: Session, inspection_id: str) -> dict:
     """Derive coverage dict from uploaded image roles."""
     from app.models import InspectionImage  # noqa: PLC0415
 
-    rows = (
-        db.query(InspectionImage)
-        .filter(InspectionImage.inspection_id == inspection_id)
-        .all()
-    )
+    rows = db.query(InspectionImage).filter(InspectionImage.inspection_id == inspection_id).all()
     roles_present = {r.role for r in rows if r.accepted}
     return {
         "front": "front" in roles_present,
@@ -556,7 +570,7 @@ def create_review(
     reviewer_id: str,
     overridden_decision: str,
     reason: str,
-) -> "ReviewRecordOut | None":
+) -> ReviewRecordOut | None:
     """
     Create a supervisor override record.
 
@@ -597,7 +611,7 @@ def create_review(
 def get_audit_trail(
     db: Session,
     inspection_id: str,
-) -> "AuditTrailOut | None":
+) -> AuditTrailOut | None:
     """
     Return the full audit trail: original report + all ReviewRecords in order.
 
@@ -640,7 +654,7 @@ def list_inspections(
     date_to: str | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> "InspectionListOut":
+) -> InspectionListOut:
     """
     Paginated inspection list for the dashboard.
     Supports filtering by status, category, decision, inspector, and date range.

@@ -182,7 +182,5 @@ def _get_table(rule_version: str) -> dict[str, Any]:
     """Fetch a registered rule table by version, raise KeyError if unknown."""
     if rule_version not in RULE_TABLE_REGISTRY:
         known = ", ".join(sorted(RULE_TABLE_REGISTRY.keys()))
-        raise KeyError(
-            f"Unknown rule_version {rule_version!r}. Known versions: {known}"
-        )
+        raise KeyError(f"Unknown rule_version {rule_version!r}. Known versions: {known}")
     return RULE_TABLE_REGISTRY[rule_version]

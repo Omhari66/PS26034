@@ -22,6 +22,7 @@ _ALL_PASS_EVIDENCES = [
         "field_name": "mrp",
         "state": "FOUND",
         "value": "149.00",
+        "secondary_value": "149.00",
         "source_image": "front.jpg",
         "bbox": [10, 20, 200, 80],
         "ocr_engine": "paddleocr",
@@ -31,6 +32,7 @@ _ALL_PASS_EVIDENCES = [
         "field_name": "net_quantity",
         "state": "FOUND",
         "value": "500g",
+        "secondary_value": "500g",
         "ocr_engine": "paddleocr",
         "ocr_confidence": 0.91,
     },
@@ -38,6 +40,7 @@ _ALL_PASS_EVIDENCES = [
         "field_name": "manufacturing_date",
         "state": "FOUND",
         "value": "2025-01-01",
+        "secondary_value": "2025-01-01",
         "ocr_engine": "paddleocr",
         "ocr_confidence": 0.87,
     },
@@ -45,6 +48,7 @@ _ALL_PASS_EVIDENCES = [
         "field_name": "manufacturer_name",
         "state": "FOUND",
         "value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "secondary_value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
         "ocr_engine": "paddleocr",
         "ocr_confidence": 0.88,
     },
@@ -52,6 +56,7 @@ _ALL_PASS_EVIDENCES = [
         "field_name": "consumer_care",
         "state": "FOUND",
         "value": "1800-000-000",
+        "secondary_value": "1800-000-000",
         "ocr_engine": "paddleocr",
         "ocr_confidence": 0.85,
     },
@@ -59,9 +64,21 @@ _ALL_PASS_EVIDENCES = [
 
 _MIXED_EVIDENCES = [
     # mrp: PASS
-    {"field_name": "mrp", "state": "FOUND", "value": "149.00", "ocr_confidence": 0.94},
+    {
+        "field_name": "mrp",
+        "state": "FOUND",
+        "value": "149.00",
+        "secondary_value": "149.00",
+        "ocr_confidence": 0.94,
+    },
     # net_quantity: PASS
-    {"field_name": "net_quantity", "state": "FOUND", "value": "500g", "ocr_confidence": 0.91},
+    {
+        "field_name": "net_quantity",
+        "state": "FOUND",
+        "value": "500g",
+        "secondary_value": "500g",
+        "ocr_confidence": 0.91,
+    },
     # manufacturing_date: REVIEW (NOT_VERIFIABLE)
     {"field_name": "manufacturing_date", "state": "NOT_VERIFIABLE", "image_quality": "low"},
     # manufacturer_name: PASS
@@ -69,6 +86,7 @@ _MIXED_EVIDENCES = [
         "field_name": "manufacturer_name",
         "state": "FOUND",
         "value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "secondary_value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
         "ocr_confidence": 0.88,
     },  # noqa: E501
     # consumer_care: FAIL (NOT_FOUND, required)
@@ -76,19 +94,33 @@ _MIXED_EVIDENCES = [
 ]
 
 _REVIEW_ONLY_EVIDENCES = [
-    {"field_name": "mrp", "state": "FOUND", "value": "149.00", "ocr_confidence": 0.94},
-    {"field_name": "net_quantity", "state": "FOUND", "value": "500g", "ocr_confidence": 0.91},
+    {
+        "field_name": "mrp",
+        "state": "FOUND",
+        "value": "149.00",
+        "secondary_value": "149.00",
+        "ocr_confidence": 0.94,
+    },
+    {
+        "field_name": "net_quantity",
+        "state": "FOUND",
+        "value": "500g",
+        "secondary_value": "500g",
+        "ocr_confidence": 0.91,
+    },
     {"field_name": "manufacturing_date", "state": "NOT_VERIFIABLE", "image_quality": "low"},
     {
         "field_name": "manufacturer_name",
         "state": "FOUND",
         "value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "secondary_value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
         "ocr_confidence": 0.88,
     },  # noqa: E501
     {
         "field_name": "consumer_care",
         "state": "FOUND",
         "value": "1800-000-000",
+        "secondary_value": "1800-000-000",
         "ocr_confidence": 0.85,
     },  # noqa: E501
 ]
@@ -183,7 +215,7 @@ class TestSubmitInspection:
         corrections = [
             {
                 "field_name": "manufacturing_date",
-                "action": "confirmed",
+                "action": "escalated",
                 "reviewer_id": "inspector_001",
                 "acknowledged": True,
             }
@@ -191,7 +223,7 @@ class TestSubmitInspection:
         _, report = _create_and_submit(
             client, "packaged_food", _REVIEW_ONLY_EVIDENCES, corrections=corrections
         )
-        assert report["overall_decision"] == "PASS"
+        assert report["overall_decision"] == "REVIEW"
 
     def test_unsupported_category_produces_category_not_supported(self, client):
         """Category not in SUPPORTED_CATEGORIES → CATEGORY_NOT_SUPPORTED."""

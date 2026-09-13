@@ -35,9 +35,7 @@ SECRET_KEY: str = os.environ.get(
     "CHANGE_ME_before_production_this_is_only_for_demo",
 )
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
-    os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "480")
-)
+ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "480"))
 
 # ---------------------------------------------------------------------------
 # Password hashing — using bcrypt directly (avoids passlib wrap-bug check
@@ -57,6 +55,7 @@ def get_password_hash(plain: str) -> str:
 # Demo user store
 # # TODO(production): replace with a real DB-backed users table.
 # ---------------------------------------------------------------------------
+
 
 class UserRecord:
     def __init__(self, email: str, hashed_password: str, role: str):

@@ -64,6 +64,7 @@ def _similarity_ratio(a: str, b: str) -> float:
         return 0.0
     # Count matching characters (unordered — cheap approximation)
     from collections import Counter
+
     ca, cb = Counter(a), Counter(b)
     matches = sum((ca & cb).values())
     return 2 * matches / (len(a) + len(b))

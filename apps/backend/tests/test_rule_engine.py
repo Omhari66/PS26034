@@ -31,9 +31,7 @@ from app.services.inspection_service import RULE_VERSION
 # Build the field → rule_id map from the applicability engine (Phase 4 source).
 # This replaces the hard-coded FIELD_RULE_MAP that lived in inspection_service.
 _packaged_food_rules = get_rules("packaged_food", CURRENT_RULE_VERSION)
-FIELD_RULE_MAP: dict[str, str] = {
-    fr.field: fr.rule_id for fr in _packaged_food_rules.fields
-}
+FIELD_RULE_MAP: dict[str, str] = {fr.field: fr.rule_id for fr in _packaged_food_rules.fields}
 
 # The 5 MVP declarations checked by the Legal Metrology Act.
 MVP_FIELDS = list(FIELD_RULE_MAP.keys())  # mrp, net_quantity, manufacturing_date, ...
@@ -55,6 +53,7 @@ _VALID_MOCK_VALUES = {
     "consumer_care": "1800-123-456",
 }
 
+
 @pytest.mark.parametrize("field_name", MVP_FIELDS, ids=_field_ids)
 def test_found_valid_passes(field_name: str) -> None:
     """A FOUND field with good OCR confidence and required=True → PASS."""
@@ -67,7 +66,13 @@ def test_found_valid_passes(field_name: str) -> None:
         ocr_engine="paddleocr",
         ocr_confidence=0.92,
     )
-    result = evaluate_field(evidence, FIELD_RULE_MAP[field_name], RULE_VERSION, required=True, coverage={"front": True, "back": True})
+    result = evaluate_field(
+        evidence,
+        FIELD_RULE_MAP[field_name],
+        RULE_VERSION,
+        required=True,
+        coverage={"front": True, "back": True},
+    )
     assert result.decision == Decision.PASS
     assert result.field_name == field_name
     assert result.rule_version == RULE_VERSION
@@ -86,7 +91,13 @@ def test_not_found_required_fails(field_name: str) -> None:
         state=EvidenceState.NOT_FOUND,
     )
     # Coverage must be complete to assert absence
-    result = evaluate_field(evidence, FIELD_RULE_MAP[field_name], RULE_VERSION, required=True, coverage={"front": True, "back": True})
+    result = evaluate_field(
+        evidence,
+        FIELD_RULE_MAP[field_name],
+        RULE_VERSION,
+        required=True,
+        coverage={"front": True, "back": True},
+    )
     assert result.decision == Decision.FAIL
 
 
@@ -273,20 +284,41 @@ def test_mixed_state_inspection_produces_fail() -> None:
     Priority: FAIL > REVIEW → overall = FAIL
     """
     evidences = [
-        FieldEvidence("mrp", EvidenceState.FOUND, value="149.00",
-                      source_image="front.jpg", bbox=(0, 0, 100, 50),
-                      ocr_engine="paddleocr", ocr_confidence=0.94),
-        FieldEvidence("net_quantity", EvidenceState.FOUND, value="500g",
-                      ocr_engine="paddleocr", ocr_confidence=0.91),
-        FieldEvidence("manufacturing_date", EvidenceState.NOT_VERIFIABLE,
-                      image_quality="low"),
-        FieldEvidence("manufacturer_name", EvidenceState.FOUND, value='[{"role": "manufactured by", "entity": "Acme Corp"}]',
-                      ocr_engine="paddleocr", ocr_confidence=0.88),
+        FieldEvidence(
+            "mrp",
+            EvidenceState.FOUND,
+            value="149.00",
+            source_image="front.jpg",
+            bbox=(0, 0, 100, 50),
+            ocr_engine="paddleocr",
+            ocr_confidence=0.94,
+        ),
+        FieldEvidence(
+            "net_quantity",
+            EvidenceState.FOUND,
+            value="500g",
+            ocr_engine="paddleocr",
+            ocr_confidence=0.91,
+        ),
+        FieldEvidence("manufacturing_date", EvidenceState.NOT_VERIFIABLE, image_quality="low"),
+        FieldEvidence(
+            "manufacturer_name",
+            EvidenceState.FOUND,
+            value='[{"role": "manufactured by", "entity": "Acme Corp"}]',
+            ocr_engine="paddleocr",
+            ocr_confidence=0.88,
+        ),
         FieldEvidence("consumer_care", EvidenceState.NOT_FOUND),
     ]
 
     results = [
-        evaluate_field(ev, FIELD_RULE_MAP[ev.field_name], RULE_VERSION, required=True, coverage={"front": True, "back": True})
+        evaluate_field(
+            ev,
+            FIELD_RULE_MAP[ev.field_name],
+            RULE_VERSION,
+            required=True,
+            coverage={"front": True, "back": True},
+        )
         for ev in evidences
     ]
 
@@ -313,12 +345,23 @@ _VALID_MOCK_VALUES = {
 def test_all_found_high_confidence_is_pass() -> None:
     """All 5 fields FOUND with high confidence → overall PASS."""
     evidences = [
-        FieldEvidence(f, EvidenceState.FOUND, value=_VALID_MOCK_VALUES.get(f, "value"),
-                      ocr_confidence=0.95, ocr_engine="paddleocr")
+        FieldEvidence(
+            f,
+            EvidenceState.FOUND,
+            value=_VALID_MOCK_VALUES.get(f, "value"),
+            ocr_confidence=0.95,
+            ocr_engine="paddleocr",
+        )
         for f in MVP_FIELDS
     ]
     results = [
-        evaluate_field(ev, FIELD_RULE_MAP[ev.field_name], RULE_VERSION, required=True, coverage={"front": True, "back": True})
+        evaluate_field(
+            ev,
+            FIELD_RULE_MAP[ev.field_name],
+            RULE_VERSION,
+            required=True,
+            coverage={"front": True, "back": True},
+        )
         for ev in evidences
     ]
     assert aggregate_overall(results) == Decision.PASS
