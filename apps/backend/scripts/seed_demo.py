@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python
+#!/usr/bin/env python
 """
 scripts/seed_demo.py — Seed the database with known PASS / FAIL / REVIEW examples
 for the SIH demo environment.
@@ -14,8 +14,8 @@ What it creates:
 
 Safe to run multiple times — checks for existing demo inspections first.
 """
+
 import asyncio
-import json
 import sys
 import uuid
 from datetime import UTC, datetime
@@ -23,7 +23,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-from sqlalchemy import select
 
 from app.db import AsyncSessionLocal, engine
 from app.models import Base, FieldResult, Inspection
@@ -207,7 +206,7 @@ DEMO_INSPECTIONS = [
                 "value": "1800-103-1234",
                 "decision": "REVIEW",
                 "confidence": 0.44,
-                "reason": "Consumer care number found but OCR confidence too low (0.44). Please verify from original image.",
+                "reason": "Consumer care number found but OCR confidence too low (0.44). Please verify from original image.",  # noqa: E501
                 "bbox": [65, 235, 295, 258],
                 "image_role": "close_up",
             },
@@ -219,6 +218,7 @@ DEMO_INSPECTIONS = [
 # ---------------------------------------------------------------------------
 # Seeding logic
 # ---------------------------------------------------------------------------
+
 
 async def seed():
     async with engine.begin() as conn:
@@ -260,7 +260,7 @@ async def seed():
                     reason=f["reason"],
                     bbox=f["bbox"],
                     image_role=f["image_role"],
-                    rule_id=f"LM-{f['field_name'].upper().replace('_','-')[:3]}-001",
+                    rule_id=f"LM-{f['field_name'].upper().replace('_', '-')[:3]}-001",
                     rule_version=RULE_VERSION,
                 )
                 session.add(fr)

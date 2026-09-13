@@ -1,12 +1,5 @@
 packages:
   - "apps/*"
   - "packages/*"
-onlyBuiltDependencies:
-  - unrs-resolver
-  - react-native-screens
-  - react-native-safe-area-context
-  - expo-camera
-  - expo-file-system
-  - expo-haptics
-  - expo-image-picker
-  - expo-router
+allowBuilds:
+  unrs-resolver: true

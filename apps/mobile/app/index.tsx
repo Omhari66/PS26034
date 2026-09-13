@@ -38,6 +38,7 @@ export default function HomeScreen() {
         inspectionId: res.inspection_id,
         category: null,
         images: [],
+        draftReport: null,
         report: null,
       };
       router.push('/capture');

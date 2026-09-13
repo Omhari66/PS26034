@@ -60,9 +60,9 @@ app = FastAPI(
 # Must be registered before routers so preflight OPTIONS requests are handled.
 # TODO(production): replace allow_origins with the real deployed domain.
 _CORS_ORIGINS = [
-    "http://localhost:3000",   # Next.js dashboard
+    "http://localhost:3000",  # Next.js dashboard
     "http://127.0.0.1:3000",
-    "http://localhost:8081",   # Expo web
+    "http://localhost:8081",  # Expo web
     "http://localhost:19000",  # Expo DevTools
     "exp://localhost:8081",
 ]
@@ -102,12 +102,14 @@ def health() -> JSONResponse:
     except Exception:
         db_ok = False
 
-    return JSONResponse({
-        "status": "ok",
-        "service": "ps26034-backend",
-        "version": "0.6.0",
-        "environment": os.environ.get("ENVIRONMENT", "dev"),
-        "current_rule_version": CURRENT_RULE_VERSION,
-        "supported_phases": "0-7",
-        "db": "ok" if db_ok else "error",
-    })
+    return JSONResponse(
+        {
+            "status": "ok",
+            "service": "ps26034-backend",
+            "version": "0.6.0",
+            "environment": os.environ.get("ENVIRONMENT", "dev"),
+            "current_rule_version": CURRENT_RULE_VERSION,
+            "supported_phases": "0-7",
+            "db": "ok" if db_ok else "error",
+        }
+    )

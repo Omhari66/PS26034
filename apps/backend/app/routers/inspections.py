@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.dependencies.auth import get_current_user, require_supervisor
 from app.schemas.inspection import (
+    AnalyzeResponse,
     AuditTrailOut,
     CreateInspectionRequest,
     CreateInspectionResponse,

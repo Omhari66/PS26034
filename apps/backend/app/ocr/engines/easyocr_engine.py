@@ -83,7 +83,7 @@ class EasyOCREngine:
 
             self._reader = easyocr.Reader(
                 self._lang_list,
-                gpu=False,    # CPU-only for portability; set True in GPU env
+                gpu=False,  # CPU-only for portability; set True in GPU env
                 verbose=False,
             )
         return self._reader
