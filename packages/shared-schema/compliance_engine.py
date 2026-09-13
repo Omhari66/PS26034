@@ -12,10 +12,9 @@ See ARCHITECTURE.md for the authoritative path reference.
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
-
 
 # ---------------------------------------------------------------------------
 # Evidence states — what we actually know about a field
@@ -54,13 +53,13 @@ _DECISION_PRIORITY = [
 class FieldEvidence:
     field_name: str                       # e.g. "mrp", "net_quantity"
     state: EvidenceState
-    value: Optional[str] = None           # normalized extracted value, if any
-    source_image: Optional[str] = None
-    bbox: Optional[tuple] = None          # (x1, y1, x2, y2) in ORIGINAL image coords
-    ocr_engine: Optional[str] = None
-    ocr_confidence: Optional[float] = None
-    secondary_value: Optional[str] = None # from cross-check OCR, if run
-    image_quality: Optional[str] = None   # "high" | "medium" | "low"
+    value: str | None = None           # normalized extracted value, if any
+    source_image: str | None = None
+    bbox: tuple | None = None          # (x1, y1, x2, y2) in ORIGINAL image coords
+    ocr_engine: str | None = None
+    ocr_confidence: float | None = None
+    secondary_value: str | None = None # from cross-check OCR, if run
+    image_quality: str | None = None   # "high" | "medium" | "low"
     candidates: list = field(default_factory=list)  # for CONFLICTING: all readings seen
     single_engine_only: bool = False      # True = second engine unavailable; caps at REVIEW
                                           # See ARCHITECTURE.md Known Decisions for context
@@ -166,7 +165,7 @@ def validate_manufacturer(
     import json
     try:
         pairs = json.loads(evidence.value)
-    except Exception:
+    except ValueError:
         pairs = []
         
     if not pairs:

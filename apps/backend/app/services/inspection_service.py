@@ -14,12 +14,18 @@ Module boundary (CONTRACTS.md #5):
   same output, always.
 """
 
-from app.schemas.inspection import AnalyzeResponse
 import dataclasses
 from typing import TYPE_CHECKING
 
+from app.schemas.inspection import AnalyzeResponse
+
 if TYPE_CHECKING:
-    from app.schemas.inspection import AuditTrailOut, InspectionListOut, ReviewRecordOut
+    from app.schemas.inspection import (
+        AuditTrailOut,
+        FieldCorrection,
+        InspectionListOut,
+        ReviewRecordOut,
+    )
 
 from packages.shared_schema import (  # noqa: E402
     Decision,
@@ -32,6 +38,7 @@ from sqlalchemy.orm import Session
 
 from app.models import FieldResult, Inspection
 from app.schemas.inspection import (
+    FieldCorrection,
     FieldEvidenceIn,
     FieldEvidenceOut,
     InspectionReportOut,
@@ -261,7 +268,10 @@ def submit_inspection(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail={
                             "code": "UNACKNOWLEDGED_REVIEW",
-                            "message": f"Field '{rr.field_name}' flagged as REVIEW but lacks an acknowledged correction.",
+                            "message": (
+                                f"Field '{rr.field_name}' flagged as REVIEW "
+                                "but lacks an acknowledged correction."
+                            ),
                         },
                     )
                 # Apply the structured correction
@@ -446,8 +456,8 @@ def analyze_via_ocr(
     """
     from app.ocr.engines.easyocr_engine import EasyOCREngine  # noqa: PLC0415
     from app.ocr.pipeline import run_pipeline  # noqa: PLC0415
+    from app.schemas.inspection import RuleResultOut  # noqa: PLC0415
     from app.services.category_checker import check_category_mismatch  # noqa: PLC0415
-    from app.schemas.inspection import AnalyzeResponse, RuleResultOut  # noqa: PLC0415
 
     inspection = db.query(Inspection).filter(Inspection.id == inspection_id).first()
     if inspection is None:

@@ -310,7 +310,9 @@ def _extract_mrp_with_context(
         source_result=best.source,
     )
 
-def _extract_mfr_with_roles(ocr_results: list[OCRResult], lookahead: int = 2) -> ExtractionResult | None:
+def _extract_mfr_with_roles(
+    ocr_results: list[OCRResult], lookahead: int = 2
+) -> ExtractionResult | None:
     """
     Extracts Manufacturer/Marketer roles.
     Uses a forward-looking context window to handle cases where 
@@ -325,7 +327,14 @@ def _extract_mfr_with_roles(ocr_results: list[OCRResult], lookahead: int = 2) ->
     seen_pairs = set()
     
     # All role keywords we want to prevent from bleeding into the entity capture
-    role_keywords = ["manufactured by", "mfr:", "mfd by", "marketed by", "packed by", "distributed by"]
+    role_keywords = [
+        "manufactured by",
+        "mfr:",
+        "mfd by",
+        "marketed by",
+        "packed by",
+        "distributed by",
+    ]
 
     for idx, ocr_result in enumerate(ocr_results):
         # Combine current block with the next few blocks to bridge split text
@@ -368,11 +377,16 @@ def _extract_mfr_with_roles(ocr_results: list[OCRResult], lookahead: int = 2) ->
     )
 
 
-def _extract_cc_with_context(ocr_results: list[OCRResult], context_window: int = 3) -> ExtractionResult | None:
+def _extract_cc_with_context(
+    ocr_results: list[OCRResult], context_window: int = 3
+) -> ExtractionResult | None:
     import re as _re
 
     # Context keywords that qualify a bare phone/email as consumer care
-    _CC_CONTEXT = {"consumer", "customer", "care", "helpline", "toll", "grievance", "feedback", "support", "contact"}
+    _CC_CONTEXT = {
+        "consumer", "customer", "care", "helpline", "toll",
+        "grievance", "feedback", "support", "contact",
+    }
 
     @dataclass
     class _Candidate:
