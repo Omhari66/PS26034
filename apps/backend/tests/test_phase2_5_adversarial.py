@@ -270,3 +270,56 @@ def test_aggregation_review_beats_pass():
 
     overall = aggregate_overall([res_pass, res_rev])
     assert overall == Decision.REVIEW
+
+
+# ===========================================================================
+# 6. DATE ADVERSARIAL TESTS (LM-MD-001)
+# ===========================================================================
+
+
+def test_date_valid_passes():
+    evidence = FieldEvidence(
+        field_name="manufacturing_date",
+        state=EvidenceState.FOUND,
+        value="01/2025",
+        ocr_confidence=0.85,
+    )
+    res = evaluate_field(evidence, "LM-MD-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE)
+    assert res.decision == Decision.PASS
+
+
+def test_date_low_confidence_routes_to_review():
+    evidence = FieldEvidence(
+        field_name="manufacturing_date",
+        state=EvidenceState.FOUND,
+        value="01/2025",
+        ocr_confidence=0.45,
+    )
+    res = evaluate_field(evidence, "LM-MD-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE)
+    assert res.decision == Decision.REVIEW
+
+
+def test_date_missing_full_coverage_fails():
+    evidence = FieldEvidence(field_name="manufacturing_date", state=EvidenceState.NOT_FOUND)
+    res = evaluate_field(evidence, "LM-MD-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE)
+    assert res.decision == Decision.FAIL
+
+
+def test_date_missing_front_only_gives_review():
+    evidence = FieldEvidence(field_name="manufacturing_date", state=EvidenceState.NOT_FOUND)
+    res = evaluate_field(evidence, "LM-MD-001", RULE_VERSION, required=True, coverage=FRONT_ONLY)
+    assert res.decision == Decision.REVIEW
+
+
+def test_single_engine_only_caps_at_review():
+    evidence = FieldEvidence(
+        field_name="mrp",
+        state=EvidenceState.FOUND,
+        value="199.00",
+        ocr_confidence=0.92,
+        single_engine_only=True,
+    )
+    res = evaluate_field(
+        evidence, "LM-MRP-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE
+    )
+    assert res.decision == Decision.REVIEW
