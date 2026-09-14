@@ -171,9 +171,13 @@ def validate_manufacturer(
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Could not parse manufacturer roles from {evidence.value}", evidence)
         
     # Check for the exact role keys output by your extractor (with underscores)
-    has_mfr_or_packer = any(p.get("role") in ["manufactured_by", "manufactured by", "packed_by", "packed by", "manufacturer"] for p in pairs)
+    has_mfr_or_packer = any(
+        x in p.get("role", "").lower()
+        for p in pairs
+        for x in ["manufactured", "mfd", "mfr", "packed"]
+    )
 
-    has_marketed = any(p.get("role") == "marketed_by" for p in pairs)
+    has_marketed = any("marketed" in p.get("role", "").lower() for p in pairs)
     
     # Enforce the legal rule: Marketers do not satisfy the manufacturer requirement
     if not has_mfr_or_packer and has_marketed:
