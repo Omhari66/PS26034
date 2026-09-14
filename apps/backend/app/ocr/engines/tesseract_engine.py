@@ -96,14 +96,20 @@ class TesseractEngine:
             )
         return results
 
-    def recognize_region(self, image_path: str, bbox: tuple) -> list[OCRResult]:
+    def recognize_region(
+        self,
+        image_path: str,
+        bbox: tuple[int, int, int, int],
+        zoom: float = 2.0,
+    ) -> list[OCRResult]:
         """Crop + upscale a region and OCR it. Used for cross-checking a specific candidate bbox."""
         from PIL import Image
 
         image = Image.open(image_path).convert("RGB")
         x1, y1, x2, y2 = bbox
         cropped = image.crop((x1, y1, x2, y2))
-        upscaled = cropped.resize((cropped.width * 2, cropped.height * 2), Image.LANCZOS)
+        new_size = (int(cropped.width * zoom), int(cropped.height * zoom))
+        upscaled = cropped.resize(new_size, Image.LANCZOS)
         data = self._pytesseract.image_to_data(
             upscaled,
             lang=self._lang,
@@ -115,10 +121,10 @@ class TesseractEngine:
             conf = data["conf"][i]
             if not text or conf < 0:
                 continue
-            bx = x1 + data["left"][i] // 2
-            by = y1 + data["top"][i] // 2
-            bw = data["width"][i] // 2
-            bh = data["height"][i] // 2
+            bx = x1 + int(data["left"][i] / zoom)
+            by = y1 + int(data["top"][i] / zoom)
+            bw = int(data["width"][i] / zoom)
+            bh = int(data["height"][i] / zoom)
             results.append(
                 OCRResult(
                     text=text,

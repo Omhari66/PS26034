@@ -255,9 +255,14 @@ class DecisionQualityAnalyticsOut(BaseModel):
     total_inspections: int
     review_count: int
     review_rate_percentage: float
+    weekly_total_inspections: int = 0
+    weekly_review_count: int = 0
+    weekly_review_rate_percentage: float = 0.0
     overridden_reviews_count: int
     confirmed_reviews_count: int
     override_rate_percentage: float
+    confirmation_rate_percentage: float = 0.0
     decision_counts: dict[str, int]
     top_review_trigger_fields: list[DecisionQualityFieldTrigger]
+
 

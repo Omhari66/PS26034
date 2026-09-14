@@ -22,6 +22,7 @@ from app.schemas.inspection import AnalyzeResponse, DecisionQualityAnalyticsOut
 if TYPE_CHECKING:
     from app.schemas.inspection import (
         AuditTrailOut,
+        DecisionQualityAnalyticsOut,
         FieldCorrection,
         InspectionListOut,
         ReviewRecordOut,
@@ -746,10 +747,12 @@ def get_inspection_images(db: Session, inspection_id: str) -> list:
 
 def get_decision_quality_analytics(db: Session) -> DecisionQualityAnalyticsOut:
     """
-    Phase 9 (Gap 4): Decision Quality Tracking.
-    Calculates review rate, supervisor override rate, decision breakdown, and top review fields.
+    Phase 9 (Gap 4 / Ticket 13): Decision Quality Analytics.
+    Calculates total inspections, weekly review rate, supervisor override & confirmation rates,
+    decision breakdown, and top review-triggering fields from DB records.
     """
     from collections import Counter  # noqa: PLC0415
+    from datetime import UTC, datetime, timedelta  # noqa: PLC0415
 
     from app.models import FieldResult, ReviewRecord  # noqa: PLC0415
     from app.schemas.inspection import (  # noqa: PLC0415
@@ -760,41 +763,116 @@ def get_decision_quality_analytics(db: Session) -> DecisionQualityAnalyticsOut:
     inspections = db.query(Inspection).filter(Inspection.status == "submitted").all()
     total_inspections = len(inspections)
 
+    now_utc = datetime.now(UTC)
+    one_week_ago = now_utc - timedelta(days=7)
+
     decision_counts = Counter()
     review_inspection_ids = set()
+    weekly_inspections_count = 0
+    weekly_review_count = 0
 
     for insp in inspections:
         dec = insp.overall_decision or "UNKNOWN"
         decision_counts[dec] += 1
-        if dec == Decision.REVIEW.value or dec == "REVIEW":
+        is_review = dec == Decision.REVIEW.value or dec == "REVIEW"
+        if is_review:
             review_inspection_ids.add(insp.id)
+
+        # Weekly window check
+        if insp.created_at is not None:
+            insp_dt = insp.created_at
+            if insp_dt.tzinfo is None:
+                insp_dt = insp_dt.replace(tzinfo=UTC)
+            if insp_dt >= one_week_ago:
+                weekly_inspections_count += 1
+                if is_review:
+                    weekly_review_count += 1
 
     review_count = len(review_inspection_ids)
     review_rate_percentage = (
         round((review_count / total_inspections * 100), 2) if total_inspections > 0 else 0.0
     )
-
-    # Overrides
-    all_overrides = db.query(ReviewRecord).all()
-    overridden_inspection_ids = {r.inspection_id for r in all_overrides}
-
-    # Count how many REVIEW inspections were overridden
-    overridden_reviews_count = len(review_inspection_ids.intersection(overridden_inspection_ids))
-    confirmed_reviews_count = max(0, review_count - overridden_reviews_count)
-    override_rate_percentage = (
-        round((overridden_reviews_count / review_count * 100), 2) if review_count > 0 else 0.0
+    weekly_review_rate_percentage = (
+        round((weekly_review_count / weekly_inspections_count * 100), 2)
+        if weekly_inspections_count > 0
+        else 0.0
     )
 
-    # Top review trigger fields: count fields in review inspections where decision == REVIEW
-    field_results = (
+    # Structured FieldCorrection analytics (Phase 3.5) + ReviewRecord supervisor overrides (Phase 5)
+    all_field_results = db.query(FieldResult).all()
+    corrected_actions_count = 0
+    confirmed_actions_count = 0
+
+    for fr in all_field_results:
+        if fr.correction_json and isinstance(fr.correction_json, dict):
+            action = fr.correction_json.get("action")
+            if action == "corrected":
+                corrected_actions_count += 1
+            elif action == "confirmed":
+                confirmed_actions_count += 1
+
+    # Supervisor ReviewRecords
+    all_overrides = db.query(ReviewRecord).all()
+    supervisor_overrides_count = sum(
+        1 for r in all_overrides if r.overridden_decision != r.original_decision
+    )
+    supervisor_confirmations_count = sum(
+        1 for r in all_overrides if r.overridden_decision == r.original_decision
+    )
+
+    # Combined override vs confirmation tallies
+    overridden_reviews_count = corrected_actions_count + supervisor_overrides_count
+    confirmed_reviews_count = confirmed_actions_count + supervisor_confirmations_count
+
+    # If no structured corrections exist yet, fallback to inspection-level review status
+    if (
+        overridden_reviews_count == 0
+        and confirmed_reviews_count == 0
+        and len(all_overrides) > 0
+    ):
+        overridden_inspection_ids = {r.inspection_id for r in all_overrides}
+        overridden_reviews_count = len(
+            review_inspection_ids.intersection(overridden_inspection_ids)
+        )
+        confirmed_reviews_count = max(0, review_count - overridden_reviews_count)
+    elif overridden_reviews_count == 0 and confirmed_reviews_count == 0 and review_count > 0:
+        # If inspections landed in REVIEW but no corrections/overrides occurred yet,
+        # track all as confirmed.
+        confirmed_reviews_count = review_count
+
+    total_reviewed_items = overridden_reviews_count + confirmed_reviews_count
+    override_rate_percentage = (
+        round((overridden_reviews_count / total_reviewed_items * 100), 2)
+        if total_reviewed_items > 0
+        else 0.0
+    )
+    confirmation_rate_percentage = (
+        round((confirmed_reviews_count / total_reviewed_items * 100), 2)
+        if total_reviewed_items > 0
+        else 0.0
+    )
+
+    # Top review trigger fields: count fields where decision == REVIEW
+    # or a field correction was recorded.
+    field_results_for_review = (
         db.query(FieldResult)
         .join(Inspection, FieldResult.inspection_id == Inspection.id)
-        .filter(Inspection.overall_decision == Decision.REVIEW.value)
-        .filter(FieldResult.decision == Decision.REVIEW.value)
+        .filter(
+            (FieldResult.decision == Decision.REVIEW.value)
+            | (Inspection.overall_decision == Decision.REVIEW.value)
+        )
         .all()
     )
 
-    field_counter = Counter([fr.field_name for fr in field_results])
+    field_counter = Counter()
+    for fr in field_results_for_review:
+        if (
+            fr.decision == Decision.REVIEW.value
+            or fr.correction_json is not None
+            or fr.inspection.overall_decision == Decision.REVIEW.value
+        ):
+            field_counter[fr.field_name] += 1
+
     total_field_reviews = sum(field_counter.values())
 
     top_trigger_fields = []
@@ -808,22 +886,19 @@ def get_decision_quality_analytics(db: Session) -> DecisionQualityAnalyticsOut:
             )
         )
 
-    # Default entries if empty
-    if not top_trigger_fields:
-        top_trigger_fields = [
-            DecisionQualityFieldTrigger(field_name="mrp", review_count=0, percentage=0.0),
-            DecisionQualityFieldTrigger(field_name="consumer_care", review_count=0, percentage=0.0),
-            DecisionQualityFieldTrigger(field_name="mfg_date", review_count=0, percentage=0.0),
-        ]
-
     return DecisionQualityAnalyticsOut(
         total_inspections=total_inspections,
         review_count=review_count,
         review_rate_percentage=review_rate_percentage,
+        weekly_total_inspections=weekly_inspections_count,
+        weekly_review_count=weekly_review_count,
+        weekly_review_rate_percentage=weekly_review_rate_percentage,
         overridden_reviews_count=overridden_reviews_count,
         confirmed_reviews_count=confirmed_reviews_count,
         override_rate_percentage=override_rate_percentage,
+        confirmation_rate_percentage=confirmation_rate_percentage,
         decision_counts=dict(decision_counts),
         top_review_trigger_fields=top_trigger_fields,
     )
+
 

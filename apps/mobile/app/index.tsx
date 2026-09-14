@@ -18,13 +18,33 @@ import { Colors } from '../constants/colors';
 import { createInspection, login, setTokenProvider } from '../lib/api';
 import type { InspectionSession } from '../lib/types';
 
+import { loadSession, saveSession, clearSession } from '../lib/session';
+
 // Shared session state — passed via router params as a stringified JSON.
 // In Phase 5 this becomes a context or Zustand store.
 export let activeSession: InspectionSession | null = null;
 
+export function setActiveSession(session: InspectionSession | null) {
+  activeSession = session;
+  if (session) {
+    saveSession(session);
+  } else {
+    clearSession();
+  }
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [resumableSession, setResumableSession] = useState<InspectionSession | null>(null);
+
+  React.useEffect(() => {
+    loadSession().then((saved) => {
+      if (saved) {
+        setResumableSession(saved);
+      }
+    });
+  }, []);
 
   async function handleStart() {
     setLoading(true);
@@ -34,19 +54,36 @@ export default function HomeScreen() {
       setTokenProvider(() => auth.token);
 
       const res = await createInspection('inspector@demo.ps26034');
-      activeSession = {
+      const newSession: InspectionSession = {
         inspectionId: res.inspection_id,
         category: null,
         images: [],
         draftReport: null,
         report: null,
       };
+      setActiveSession(newSession);
+      setResumableSession(null);
       router.push('/capture');
     } catch (err) {
       Alert.alert(
         'Connection Error',
         `Could not reach the server.\n\n${(err as Error).message}\n\nMake sure the backend is running and EXPO_PUBLIC_API_URL is set.`,
       );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResume() {
+    if (!resumableSession) return;
+    setLoading(true);
+    try {
+      const auth = await login('inspector@demo.ps26034', 'inspector123');
+      setTokenProvider(() => auth.token);
+      setActiveSession(resumableSession);
+      router.push('/capture');
+    } catch (err) {
+      Alert.alert('Connection Error', `Could not reach server to resume: ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -77,6 +114,21 @@ export default function HomeScreen() {
             </View>
           ))}
         </View>
+
+        {/* Resume button if previous unsubmitted session exists */}
+        {resumableSession && (
+          <Pressable
+            style={({ pressed }) => [styles.resumeBtn, pressed && styles.startBtnPressed]}
+            onPress={handleResume}
+            disabled={loading}
+            accessibilityRole="button"
+            accessibilityLabel="Resume existing inspection session"
+          >
+            <Text style={styles.resumeBtnText}>
+              Resume Session ({resumableSession.images.length} photos)
+            </Text>
+          </Pressable>
+        )}
 
         {/* Start button */}
         <Pressable
@@ -142,6 +194,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
   },
+  resumeBtn: {
+    width: '100%',
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  resumeBtnText: { fontSize: 16, fontWeight: '700', color: Colors.primary },
   startBtn: {
     width: '100%',
     backgroundColor: Colors.primary,

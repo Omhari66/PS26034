@@ -381,32 +381,10 @@ export const api = {
 
   getDecisionQualityAnalytics: async (): Promise<DecisionQualityAnalytics> => {
     try {
-      const data = await fetchJson<DecisionQualityAnalytics>("/inspections/analytics/decision-quality");
-      if (data && data.total_inspections > 0) {
-        return data;
-      }
+      return await fetchJson<DecisionQualityAnalytics>("/analytics/decision-quality");
     } catch {
-      // Fallback demo analytics
+      return await fetchJson<DecisionQualityAnalytics>("/inspections/analytics/decision-quality");
     }
-
-    return {
-      total_inspections: 48,
-      review_count: 14,
-      review_rate_percentage: 29.17,
-      overridden_reviews_count: 11,
-      confirmed_reviews_count: 3,
-      override_rate_percentage: 78.57,
-      decision_counts: {
-        PASS: 26,
-        FAIL: 8,
-        REVIEW: 14,
-        NOT_APPLICABLE: 0,
-      },
-      top_review_trigger_fields: [
-        { field_name: "mrp", review_count: 7, percentage: 50.0 },
-        { field_name: "consumer_care", review_count: 4, percentage: 28.57 },
-        { field_name: "mfg_date", review_count: 3, percentage: 21.43 },
-      ],
-    };
   },
+
 };

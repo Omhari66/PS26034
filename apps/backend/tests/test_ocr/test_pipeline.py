@@ -201,35 +201,79 @@ class TestConflictingState:
         assert mrp_ev.state == EvidenceState.CONFLICTING
         assert len(list(mrp_ev.candidates or [])) == 2
 
+    def test_conflicting_evidence_preserves_secondary_value(self):
+        """Secondary value must be preserved on conflict for reviewer inspection."""
+        primary = MockOCREngine([_r("MRP: Rs. 49.00")])
+        secondary = MockOCREngine([_r("MRP: Rs. 149.00")])
+        evidences, _ = run_pipeline(
+            ["dummy.jpg"], primary_engine=primary, secondary_engine=secondary
+        )
+        mrp_ev = next(e for e in evidences if e.field_name == "mrp")
+        assert mrp_ev.state == EvidenceState.CONFLICTING
+        assert mrp_ev.value is None
+        assert mrp_ev.secondary_value == "149.00"
+        assert mrp_ev.candidates == ["49.00", "149.00"]
+
 
 # ===========================================================================
-# NOT_VERIFIABLE state — secondary engine unavailable
+# Secondary engine unavailable / failure → single_engine_only
 # ===========================================================================
 
 
-class TestNotVerifiableState:
-    def test_no_secondary_engine_produces_not_verifiable(self):
+class TestSecondaryUnavailableState:
+    def test_no_secondary_engine_preserves_found_and_sets_single_engine(self):
         """
-        When secondary_engine=None (e.g. PaddleOCR unavailable),
-        all critical fields that are found by primary must be NOT_VERIFIABLE
-        rather than FOUND — this satisfies CONTRACTS.md #2 honestly.
+        When secondary_engine=None, primary FOUND evidence is preserved,
+        single_engine_only=True is set, and state is NOT converted to NOT_VERIFIABLE.
         """
-        primary = MockOCREngine(_ALL_FIELDS_BLOCKS)
-        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=primary, secondary_engine=None)
-        # Fields found by primary but without cross-check → NOT_VERIFIABLE
-        for ev in evidences:
-            if ev.field_name == "mrp":  # mrp is in the blocks
-                assert ev.state == EvidenceState.NOT_VERIFIABLE, (
-                    f"Expected NOT_VERIFIABLE for {ev.field_name} without secondary, got {ev.state}"
-                )
-
-    def test_not_verifiable_still_carries_primary_value(self):
-        """NOT_VERIFIABLE should store the primary reading for context."""
         primary = MockOCREngine([_r("MRP: Rs. 149.00")])
         evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=primary, secondary_engine=None)
         mrp_ev = next(e for e in evidences if e.field_name == "mrp")
-        assert mrp_ev.state == EvidenceState.NOT_VERIFIABLE
-        assert mrp_ev.value is not None  # primary reading preserved
+        assert mrp_ev.state == EvidenceState.FOUND
+        assert mrp_ev.value == "149.00"
+        assert mrp_ev.single_engine_only is True
+
+    def test_no_secondary_engine_preserves_not_found_with_single_engine(self):
+        """When secondary_engine=None and primary finds nothing, state remains NOT_FOUND."""
+        primary = MockOCREngine([_r("MRP: Rs. 149.00")])
+        evidences, _ = run_pipeline(["dummy.jpg"], primary_engine=primary, secondary_engine=None)
+        absent_ev = next(e for e in evidences if e.field_name == "net_quantity")
+        assert absent_ev.state == EvidenceState.NOT_FOUND
+        assert absent_ev.single_engine_only is True
+
+    def test_secondary_exception_preserves_primary_and_sets_single_engine(self):
+        """
+        When secondary engine raises an exception during recognize_region,
+        primary evidence is preserved and single_engine_only=True is set.
+        """
+        primary = MockOCREngine([_r("MRP: Rs. 149.00")])
+
+        class FailingSecondary(MockOCREngine):
+            def recognize_region(self, image_path, bbox, zoom=2.0):
+                raise RuntimeError("Tesseract process crashed")
+
+        secondary = FailingSecondary([])
+        evidences, _ = run_pipeline(
+            ["dummy.jpg"], primary_engine=primary, secondary_engine=secondary
+        )
+        mrp_ev = next(e for e in evidences if e.field_name == "mrp")
+        assert mrp_ev.state == EvidenceState.FOUND
+        assert mrp_ev.value == "149.00"
+        assert mrp_ev.single_engine_only is True
+        assert mrp_ev.secondary_value is None
+
+    def test_tesseract_engine_protocol_conformance(self):
+        """TesseractEngine.recognize_region must accept zoom and conform to OCREngine protocol."""
+        import inspect
+
+        from app.ocr.engines.tesseract_engine import TesseractEngine
+
+        sig = inspect.signature(TesseractEngine.recognize_region)
+        assert "zoom" in sig.parameters
+        assert sig.parameters["zoom"].default == 2.0
+        assert hasattr(TesseractEngine, "name")
+        assert callable(getattr(TesseractEngine, "recognize"))
+        assert callable(getattr(TesseractEngine, "recognize_region"))
 
 
 # ===========================================================================
