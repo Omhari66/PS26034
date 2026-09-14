@@ -835,7 +835,8 @@ def get_decision_quality_analytics(db: Session) -> DecisionQualityAnalyticsOut:
         )
         confirmed_reviews_count = max(0, review_count - overridden_reviews_count)
     elif overridden_reviews_count == 0 and confirmed_reviews_count == 0 and review_count > 0:
-        # If inspections landed in REVIEW but no corrections/overrides occurred yet, track as review_count
+        # If inspections landed in REVIEW but no corrections/overrides occurred yet,
+        # track all as confirmed.
         confirmed_reviews_count = review_count
 
     total_reviewed_items = overridden_reviews_count + confirmed_reviews_count
@@ -850,7 +851,8 @@ def get_decision_quality_analytics(db: Session) -> DecisionQualityAnalyticsOut:
         else 0.0
     )
 
-    # Top review trigger fields: count fields where decision == REVIEW or field correction was recorded
+    # Top review trigger fields: count fields where decision == REVIEW
+    # or a field correction was recorded.
     field_results_for_review = (
         db.query(FieldResult)
         .join(Inspection, FieldResult.inspection_id == Inspection.id)

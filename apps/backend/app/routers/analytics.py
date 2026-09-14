@@ -29,5 +29,8 @@ router = APIRouter(
 def get_decision_quality_analytics(
     db: Session = Depends(get_db),
 ) -> DecisionQualityAnalyticsOut:
-    """Returns total inspections, review rates, supervisor override & confirmation rates, decision counts, and top review fields."""
+    """
+    Returns total inspections, review rates, supervisor override & confirmation rates,
+    decision counts, and top review fields.
+    """
     return svc.get_decision_quality_analytics(db)

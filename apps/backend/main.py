@@ -31,7 +31,6 @@ from app.routers import analytics, auth, inspections, rules  # noqa: E402
 from app.services.applicability import CURRENT_RULE_VERSION  # noqa: E402
 
 
-
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """

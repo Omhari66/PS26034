@@ -7,8 +7,8 @@ weekly REVIEW rate calculations, and top REVIEW-triggering field aggregation.
 """
 
 from datetime import UTC, datetime, timedelta
-import pytest
-from app.models import FieldResult, Inspection, ReviewRecord
+
+from app.models import FieldResult, Inspection
 from app.services import inspection_service as svc
 
 
@@ -48,7 +48,10 @@ class TestDecisionQualityAnalytics:
         assert res.top_review_trigger_fields == []
 
     def test_analytics_review_with_structured_corrections(self, db):
-        """Tests calculation of review rate, override rate, confirmation rate from FieldCorrection records."""
+        """
+        Tests calculation of review rate, override rate, confirmation rate
+        from FieldCorrection records.
+        """
         now = datetime.now(UTC)
 
         # Inspection 1: REVIEW decision with field corrected
@@ -134,7 +137,10 @@ class TestDecisionQualityAnalytics:
         assert "consumer_care" in field_names
 
     def test_analytics_weekly_filtering(self, db):
-        """Tests that weekly review metrics accurately filter inspections created in the last 7 days."""
+        """
+        Tests that weekly review metrics accurately filter inspections created
+        in the last 7 days.
+        """
         now = datetime.now(UTC)
         eight_days_ago = now - timedelta(days=8)
 
@@ -167,7 +173,10 @@ class TestDecisionQualityAnalytics:
         assert res.weekly_review_rate_percentage == 0.0
 
     def test_analytics_http_endpoint(self, client):
-        """Tests GET /api/v1/analytics/decision-quality and GET /api/v1/inspections/analytics/decision-quality via HTTP request."""
+        """
+        Tests GET /api/v1/analytics/decision-quality and
+        GET /api/v1/inspections/analytics/decision-quality via HTTP request.
+        """
         res1 = client.get("/api/v1/analytics/decision-quality")
         assert res1.status_code == 200
         data1 = res1.json()
