@@ -16,7 +16,7 @@ Phase 5 additions:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -294,6 +294,71 @@ def get_inspection(
             },
         )
     return report
+
+
+@router.get(
+    "/{inspection_id}/report/preview",
+    response_model=InspectionReportOut,
+    summary="Live preview of inspection report before final export (validates completeness)",
+)
+def get_report_preview(
+    inspection_id: str,
+    db: Session = Depends(get_db),
+) -> InspectionReportOut:
+    try:
+        report = svc.get_report_preview(db, inspection_id)
+    except svc.ReportCompletenessError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "REPORT_INCOMPLETE",
+                "message": str(exc),
+            },
+        )
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "REPORT_NOT_FOUND",
+                "message": f"No submitted report for inspection {inspection_id}",
+            },
+        )
+    return report
+
+
+@router.get(
+    "/{inspection_id}/report/pdf",
+    summary="Export printable PDF inspection report with completeness guarantee",
+)
+def get_report_pdf(
+    inspection_id: str,
+    db: Session = Depends(get_db),
+) -> Response:
+    try:
+        pdf_bytes = svc.generate_inspection_pdf(inspection_id, db)
+    except svc.ReportCompletenessError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "REPORT_INCOMPLETE",
+                "message": str(exc),
+            },
+        )
+    if pdf_bytes is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "REPORT_NOT_FOUND",
+                "message": f"No submitted report for inspection {inspection_id}",
+            },
+        )
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="inspection_report_{inspection_id}.pdf"'
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
