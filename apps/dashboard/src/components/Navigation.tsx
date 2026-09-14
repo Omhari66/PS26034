@@ -24,6 +24,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   X,
+  Globe,
 } from "lucide-react";
 
 export const Navigation: React.FC = () => {
@@ -72,7 +73,8 @@ export const Navigation: React.FC = () => {
   }
 
   const navItems = [
-    { href: "/", label: "Executive Dashboard", icon: LayoutDashboard, badge: null },
+    { href: "/", label: "Public Home", icon: Globe, badge: null },
+    { href: "/dashboard", label: "Executive Dashboard", icon: LayoutDashboard, badge: "Main" },
     { href: "/inspections", label: "Inspections Registry", icon: FileCheck2, badge: "Live" },
     { href: "/review", label: "REVIEW Studio", icon: Sparkles, badge: "Dual-OCR" },
     { href: "/analytics", label: "Decision Quality", icon: BarChart3, badge: "Gap 4" },
