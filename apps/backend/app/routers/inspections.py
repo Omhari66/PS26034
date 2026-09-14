@@ -26,7 +26,9 @@ from app.schemas.inspection import (
     AuditTrailOut,
     CreateInspectionRequest,
     CreateInspectionResponse,
+    DecisionQualityAnalyticsOut,
     ImageUploadResponse,
+    InspectionImageMetaOut,
     InspectionListOut,
     InspectionReportOut,
     ReviewRecordOut,
@@ -367,6 +369,18 @@ def create_review(
 
 
 @router.get(
+    "/analytics/decision-quality",
+    response_model=DecisionQualityAnalyticsOut,
+    summary="Phase 9 (Gap 4): Decision quality tracking metrics",
+)
+def get_decision_quality_analytics(
+    db: Session = Depends(get_db),
+) -> DecisionQualityAnalyticsOut:
+    """Returns review rate %, supervisor override %, decision breakdown, and top review fields."""
+    return svc.get_decision_quality_analytics(db)
+
+
+@router.get(
     "/{inspection_id}/audit",
     response_model=AuditTrailOut,
     summary="Full audit trail: original report + all review records",
@@ -385,3 +399,17 @@ def get_audit_trail(
             },
         )
     return trail
+
+
+@router.get(
+    "/{inspection_id}/images",
+    response_model=list[InspectionImageMetaOut],
+    summary="List image metadata with web URLs for bounding box viewer",
+)
+def get_inspection_images(
+    inspection_id: str,
+    db: Session = Depends(get_db),
+) -> list[InspectionImageMetaOut]:
+    return svc.get_inspection_images(db, inspection_id)
+
+

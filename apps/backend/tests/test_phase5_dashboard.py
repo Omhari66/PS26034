@@ -21,6 +21,14 @@ import copy
 # Helpers — build a submitted inspection we can review
 # ---------------------------------------------------------------------------
 
+_FIELD_VALUES = {
+    "mrp": "150.00",
+    "net_quantity": "100 g",
+    "manufacturing_date": "01/2026",
+    "manufacturer_name": '[{"role": "Manufactured by", "entity": "Test Corp"}]',
+    "consumer_care": "care@test.com",
+}
+
 _PASS_EVIDENCE = [
     {
         "field_name": "mrp",

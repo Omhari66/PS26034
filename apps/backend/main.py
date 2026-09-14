@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 # In production, install packages/shared-schema as a proper local package.
 _repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _repo_root not in sys.path:
-    sys.path.insert(0, _repo_root)
+    sys.path.append(_repo_root)
 
 from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
@@ -74,6 +74,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from pathlib import Path  # noqa: E402
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+# Mount static images directory for web dashboard evidence viewer
+_images_dir = Path(__file__).parent / "app" / "data" / "images"
+_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static/images", StaticFiles(directory=str(_images_dir)), name="static_images")
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(inspections.router, prefix="/api/v1")
