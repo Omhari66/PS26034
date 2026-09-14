@@ -22,6 +22,7 @@ from app.schemas.inspection import AnalyzeResponse, DecisionQualityAnalyticsOut
 if TYPE_CHECKING:
     from app.schemas.inspection import (
         AuditTrailOut,
+        DecisionQualityAnalyticsOut,
         FieldCorrection,
         InspectionListOut,
         ReviewRecordOut,

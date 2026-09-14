@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RuleResult, InspectionImageMeta } from "../lib/types";
+import { EvidenceViewer, calculatePercentBbox } from "./EvidenceViewer";
 import {
   Eye,
   EyeOff,
@@ -30,24 +31,40 @@ interface Props {
 export function normalizeBbox(rawBbox: any): [number, number, number, number] | null {
   if (!rawBbox || !Array.isArray(rawBbox) || rawBbox.length === 0) return null;
 
+  let x1: number, y1: number, x2: number, y2: number;
+
   // EasyOCR polygon format: [[x1, y1], [x2, y1], [x2, y2], [x1, y2]]
   if (Array.isArray(rawBbox[0]) && rawBbox[0].length >= 2) {
-    const xs = rawBbox.map((p: any) => Number(p[0]) || 0);
-    const ys = rawBbox.map((p: any) => Number(p[1]) || 0);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-    return [minX, minY, maxX, maxY];
+    const xs = rawBbox.map((p: any) => Number(p[0]));
+    const ys = rawBbox.map((p: any) => Number(p[1]));
+
+    if (xs.some((x) => isNaN(x)) || ys.some((y) => isNaN(y))) {
+      return null;
+    }
+
+    x1 = Math.min(...xs);
+    x2 = Math.max(...xs);
+    y1 = Math.min(...ys);
+    y2 = Math.max(...ys);
+  } else if (rawBbox.length === 4) {
+    // Flat 4-tuple format: [x1, y1, x2, y2]
+    const coords = rawBbox.map((n: any) => Number(n));
+    if (coords.some((c) => isNaN(c))) {
+      return null;
+    }
+    x1 = Math.min(coords[0], coords[2]);
+    x2 = Math.max(coords[0], coords[2]);
+    y1 = Math.min(coords[1], coords[3]);
+    y2 = Math.max(coords[1], coords[3]);
+  } else {
+    return null;
   }
 
-  // Flat 4-tuple format: [x1, y1, x2, y2]
-  if (rawBbox.length === 4) {
-    const coords = rawBbox.map((n: any) => Number(n) || 0);
-    return [coords[0], coords[1], coords[2], coords[3]];
+  if (x2 < x1 || y2 < y1) {
+    return null;
   }
 
-  return null;
+  return [x1, y1, x2, y2];
 }
 
 export const BoundingBoxViewer: React.FC<Props> = ({

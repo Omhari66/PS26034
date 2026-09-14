@@ -109,9 +109,8 @@ function HomePageContent() {
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div>Loading page...</div>}>
+    <Suspense fallback={<div className="card" style={{ textAlign: "center", color: "var(--text-secondary)" }}>Loading…</div>}>
       <HomePageContent />
     </Suspense>
   );
 }
-
