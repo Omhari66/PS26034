@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 import { submitInspection } from '../lib/api';
+import { checkCategoryMismatch } from '../lib/category_checker';
 import type { FieldCorrection, RuleResult } from '../lib/types';
 import { activeSession } from './index';
 
@@ -47,6 +48,13 @@ export default function ReconcileScreen() {
   const { draftReport } = session;
   const preEntered = session.preEnteredValues || {};
 
+  // Combine OCR text for local category sanity check
+  const combinedOcrText = draftReport.field_results
+    .map((fr) => [fr.evidence.value, ...(fr.evidence.candidates || [])].filter(Boolean).join(' '))
+    .join(' ');
+  const categoryCheck = checkCategoryMismatch(combinedOcrText, session.category || '');
+  const showCategoryWarning = draftReport.category_mismatch || categoryCheck.isMismatch;
+
   // Identify fields needing reconciliation:
   // 1. Fields where AI decision === 'REVIEW'
   // 2. Fields where inspector pre-entered value and AI extracted value disagree
@@ -57,6 +65,7 @@ export default function ReconcileScreen() {
     return fr.decision === 'REVIEW' || isDiff;
   });
 
+  // Ticket 6: Check that every REVIEW / disagreement field has acknowledged === true
   const acknowledgedCount = reconcileFields.filter((fr) => corrections[fr.field_name]?.acknowledged).length;
   const allAcknowledged = reconcileFields.length === 0 || acknowledgedCount === reconcileFields.length;
 
@@ -88,7 +97,10 @@ export default function ReconcileScreen() {
   async function handleSubmit() {
     if (!session) return;
     if (!allAcknowledged) {
-      Alert.alert('Incomplete Reconciliation', 'Please resolve all field disagreements and REVIEW items before submitting.');
+      Alert.alert(
+        'Submission Blocked',
+        'Please verify all flagged fields before submitting.'
+      );
       return;
     }
 
@@ -127,16 +139,16 @@ export default function ReconcileScreen() {
           </Text>
         </View>
 
-        {/* Category Mismatch Warning Box */}
-        {draftReport.category_mismatch && (
+        {/* Feature 2: Soft Yellow Category Sanity Warning Box */}
+        {showCategoryWarning && (
           <View style={styles.warningBox}>
             <View style={styles.warningHeaderRow}>
               <Ionicons name="warning" size={22} color={Colors.qualityMedium} />
-              <Text style={styles.warningTitle}>Category Mismatch Detected</Text>
+              <Text style={styles.warningTitle}>Category Mismatch Warning</Text>
             </View>
             <Text style={styles.warningText}>
-              The AI detected packaging keywords that do not strongly match your selected category.
-              Please verify field values carefully before finalizing.
+              {categoryCheck.warningMessage ||
+                'The AI detected packaging keywords that do not strongly match your selected category. Please verify field values carefully before finalizing. (Your confirmed category remains active)'}
             </Text>
           </View>
         )}
@@ -342,6 +354,14 @@ export default function ReconcileScreen() {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {/* Feature 1: REVIEW Field Acknowledgment Blocker Banner */}
+        {!allAcknowledged && (
+          <View style={styles.blockerBanner}>
+            <Ionicons name="hand-left-outline" size={20} color={Colors.qualityMedium} />
+            <Text style={styles.blockerText}>Please verify all flagged fields before submitting.</Text>
           </View>
         )}
 
@@ -746,6 +766,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     color: Colors.textPrimary,
     fontSize: 14,
+  },
+  blockerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 159, 10, 0.18)',
+    borderColor: Colors.qualityMedium,
+    borderWidth: 1.5,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  blockerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.qualityMedium,
+    flex: 1,
   },
   submitBtn: {
     backgroundColor: Colors.primary,
