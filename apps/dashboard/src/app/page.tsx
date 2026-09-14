@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+export const dynamic = "force-dynamic";
+
+import React, { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { api } from "../lib/api";
@@ -77,7 +79,7 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
-export default function OverviewPage() {
+function OverviewPageContent() {
   const [analytics, setAnalytics] = useState<DecisionQualityAnalytics | null>(null);
   const [recentInspections, setRecentInspections] = useState<InspectionListItem[]>([]);
   const [reviewQueue, setReviewQueue] = useState<InspectionListItem[]>([]);
@@ -550,6 +552,20 @@ export default function OverviewPage() {
       {/* Global Toast Container */}
       <ToastContainer toasts={toasts} onDismiss={removeToast} />
     </motion.div>
+  );
+}
+
+export default function OverviewPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" />
+        </div>
+      }
+    >
+      <OverviewPageContent />
+    </Suspense>
   );
 }
 
