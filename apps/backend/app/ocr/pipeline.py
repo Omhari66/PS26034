@@ -136,7 +136,8 @@ def _build_evidence(
     State assignment rules (all states come from EvidenceState, not invented here):
       - No primary match                     → NOT_FOUND (single_engine_only preserved)
       - Secondary unavailable/failed         → FOUND, single_engine_only=True (primary preserved)
-      - Primary found, no secondary match    → FOUND, single_engine_only=False (secondary looked, found nothing)
+      - Primary found, no secondary match    → FOUND, single_engine_only=False
+                                               (secondary looked, found nothing)
       - Both found, they agree               → FOUND, single_engine_only=False
       - Both found, they disagree            → CONFLICTING, secondary_value preserved
     """
