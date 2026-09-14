@@ -57,7 +57,7 @@ def run_pipeline(
         Never returns fewer than 5 elements (missing field → NOT_FOUND evidence).
     """
     if not image_paths:
-        return _all_not_found(), ""
+        return _all_not_found(single_engine_only=secondary_engine is None), ""
 
     if transforms is None:
         transforms = [identity_transform() for _ in image_paths]
@@ -86,6 +86,7 @@ def run_pipeline(
 
     # --- Step 3: secondary cross-check for each field found by primary ---
     secondary_extractions: dict[str, ExtractionResult | None] = {}
+    secondary_failed: dict[str, bool] = {}
     secondary_unavailable = secondary_engine is None
 
     if not secondary_unavailable:
@@ -94,7 +95,7 @@ def run_pipeline(
                 secondary_extractions[field] = None
                 continue
             # Re-read the specific bbox region on the first image that contained it
-            # (EasyOCREngine.recognize_region crops + zooms for a different representation)
+            # (EasyOCREngine / TesseractEngine recognize_region crops + zooms)
             try:
                 # Find which image this bbox came from — use first image for simplicity
                 # TODO(phase3): track per-image bbox provenance explicitly
@@ -106,15 +107,17 @@ def run_pipeline(
                 )
                 secondary_extractions[field] = extract_field(field, region_results)
             except Exception:  # noqa: BLE001
-                # Secondary failed for this field → mark as unavailable for this field
+                # Secondary engine raised an exception during OCR attempt
                 secondary_extractions[field] = None
+                secondary_failed[field] = True
 
     # --- Step 4: build FieldEvidence per field ---
     evidences: list[FieldEvidence] = []
     for field in sorted(CRITICAL_FIELDS):  # sorted for stable order
         p_ext = primary_extractions.get(field)
-        s_ext = secondary_extractions.get(field) if not secondary_unavailable else None
-        ev = _build_evidence(field, p_ext, s_ext, secondary_unavailable)
+        s_failed = secondary_unavailable or secondary_failed.get(field, False)
+        s_ext = secondary_extractions.get(field) if not s_failed else None
+        ev = _build_evidence(field, p_ext, s_ext, single_engine_only=s_failed)
         evidences.append(ev)
 
     full_ocr_text = " ".join(r.text for r in primary_results)
@@ -125,17 +128,18 @@ def _build_evidence(
     field: str,
     primary: ExtractionResult | None,
     secondary: ExtractionResult | None,
-    secondary_unavailable: bool,
+    single_engine_only: bool = False,
 ) -> FieldEvidence:
     """
     Build a single FieldEvidence from primary + secondary extraction results.
 
     State assignment rules (all states come from EvidenceState, not invented here):
-      - No primary match                     → NOT_FOUND
-      - Secondary unavailable (stub)         → NOT_VERIFIABLE (cross-check required)
-      - Primary found, no secondary match    → FOUND (secondary looked but didn't find)
-      - Both found, they agree               → FOUND
-      - Both found, they disagree            → CONFLICTING
+      - No primary match                     → NOT_FOUND (single_engine_only preserved)
+      - Secondary unavailable/failed         → FOUND, single_engine_only=True (primary preserved)
+      - Primary found, no secondary match    → FOUND, single_engine_only=False
+                                               (secondary looked, found nothing)
+      - Both found, they agree               → FOUND, single_engine_only=False
+      - Both found, they disagree            → CONFLICTING, secondary_value preserved
     """
     src_result = primary.source_result if primary else None
 
@@ -144,24 +148,25 @@ def _build_evidence(
         return FieldEvidence(
             field_name=field,
             state=EvidenceState.NOT_FOUND,
+            single_engine_only=single_engine_only,
         )
 
-    if secondary_unavailable:
-        # Cross-check engine not available → cannot satisfy CONTRACTS.md #2
-        # Return NOT_VERIFIABLE with a clear reason (not a silent failure)
+    if single_engine_only:
+        # Cross-check engine unavailable or failed during OCR attempt (CONTRACTS.md §2)
+        # Preserve primary value and flag single_engine_only=True so rule engine caps at REVIEW
         return FieldEvidence(
             field_name=field,
-            state=EvidenceState.NOT_VERIFIABLE,
+            state=EvidenceState.FOUND,
             value=primary.normalized_value,
             source_image=getattr(src_result, "engine_name", None),
             bbox=src_result.bbox if src_result else None,
             ocr_engine=src_result.engine_name if src_result else None,
             ocr_confidence=src_result.confidence if src_result else None,
-            image_quality="low",  # conservative: no cross-check possible
+            single_engine_only=True,
         )
 
     if secondary is None:
-        # Secondary engine ran but found nothing in the region → trust primary
+        # Secondary engine ran successfully but found nothing in the region → trust primary
         return FieldEvidence(
             field_name=field,
             state=EvidenceState.FOUND,
@@ -169,6 +174,7 @@ def _build_evidence(
             bbox=src_result.bbox if src_result else None,
             ocr_engine=src_result.engine_name if src_result else None,
             ocr_confidence=src_result.confidence if src_result else None,
+            single_engine_only=False,
         )
 
     # Both primary and secondary found something — check for conflict
@@ -179,10 +185,12 @@ def _build_evidence(
             field_name=field,
             state=EvidenceState.CONFLICTING,
             value=None,  # cannot commit to a value when readings disagree
+            secondary_value=secondary.normalized_value,
             bbox=src_result.bbox if src_result else None,
             ocr_engine=src_result.engine_name if src_result else None,
             ocr_confidence=src_result.confidence if src_result else None,
             candidates=candidates,
+            single_engine_only=False,
         )
 
     # Agreement — use primary's normalized value (canonical; secondary confirmed it)
@@ -194,12 +202,17 @@ def _build_evidence(
         bbox=src_result.bbox if src_result else None,
         ocr_engine=src_result.engine_name if src_result else None,
         ocr_confidence=src_result.confidence if src_result else None,
+        single_engine_only=False,
     )
 
 
-def _all_not_found() -> list[FieldEvidence]:
+def _all_not_found(single_engine_only: bool = False) -> list[FieldEvidence]:
     """Return NOT_FOUND for every field when no images are provided."""
     return [
-        FieldEvidence(field_name=field, state=EvidenceState.NOT_FOUND)
+        FieldEvidence(
+            field_name=field,
+            state=EvidenceState.NOT_FOUND,
+            single_engine_only=single_engine_only,
+        )
         for field in sorted(CRITICAL_FIELDS)
     ]

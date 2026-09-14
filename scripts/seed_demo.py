@@ -160,7 +160,7 @@ DEMO_SCENARIOS = [
             {
                 "field_name": "mrp",
                 "state": "CONFLICTING",
-                "value": "149.00",
+                "value": None,  # CONTRACTS.md §3: CONFLICTING must not commit to a single value
                 "ocr_confidence": 0.71,
                 "ocr_engine": "easyocr",
                 "source_image": "close_up.jpg",

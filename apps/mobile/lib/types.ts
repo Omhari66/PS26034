@@ -96,6 +96,9 @@ export type ImageQuality = 'high' | 'medium' | 'low';
 export interface CapturedImage {
   role: ImageRole;
   localUri: string;          // file:// URI from camera/picker
+  phash?: string;            // 64-bit DCT perceptual hash
+  uploadStatus?: 'pending' | 'uploading' | 'success' | 'failed'; // sync/upload status
+  uploadError?: string;      // error message if upload failed
   uploadResponse?: ImageUploadResponse; // set after successful upload
 }
 

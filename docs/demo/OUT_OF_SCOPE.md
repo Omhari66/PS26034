@@ -1,4 +1,4 @@
-﻿# PS 26034 — What This System Does and Does Not Do
+# PS 26034 — What This System Does and Does Not Do
 
 **Use this for your presentation slide and for answering questions honestly.**
 
@@ -31,7 +31,7 @@
 | Legal certification | The system is an assistance tool, not a legal authority |
 | Font size compliance | Cannot reliably measure physical font size from uncalibrated phone photos |
 | Placement validation | Cannot verify "principal display panel" from image position alone |
-| Hindi / regional language OCR | EasyOCR currently initialised English-only |
+| Hindi / regional language OCR | EasyOCR currently initialised English-only; unsupported scripts produce `NOT_VERIFIABLE` (routes to REVIEW, not FAIL) |
 | Best-before / expiry date | Date extractor targets mfg/packing date; BBD is not separately verified |
 | Barcode / product identity | No SKU or barcode linkage; category is inspector-confirmed |
 | Country of origin | Not in the 5 MVP fields |

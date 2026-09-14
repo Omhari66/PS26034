@@ -227,17 +227,13 @@ def test_07_consumer_care_not_confused_with_sales_number():
 
 
 # ---------------------------------------------------------------------------
-# Test 8 — Single engine → NOT_VERIFIABLE → REVIEW (Phase 3 — xfail)
+# Test 8 — Single engine → single_engine_only=True → REVIEW (Phase 3)
 # ---------------------------------------------------------------------------
 def test_08_single_engine_gives_review_not_pass():
     """
     When secondary_engine=None is passed directly to run_pipeline, the pipeline
-    correctly returns NOT_VERIFIABLE for all critical fields.
-
-    Status: PASSES at the pipeline level. However, inspection_service.py still
-    passes secondary=primary (same engine) when PaddleOCR is unavailable, which
-    means this protection never fires in production. The service-level fix is
-    tracked in PHASES.md Phase 3.
+    preserves primary evidence and sets single_engine_only=True for critical fields,
+    which evaluate_field() caps at REVIEW (cannot earn PASS).
     """
     from unittest.mock import MagicMock
 
@@ -257,8 +253,12 @@ def test_08_single_engine_gives_review_not_pass():
     )
     mrp_ev = next((e for e in evidences if e.field_name == "mrp"), None)
     assert mrp_ev is not None
-    assert mrp_ev.state == EvidenceState.NOT_VERIFIABLE, (
-        f"Single-engine MRP state={mrp_ev.state}. Expected NOT_VERIFIABLE."
+    assert mrp_ev.single_engine_only is True, (
+        f"Single-engine MRP single_engine_only={mrp_ev.single_engine_only}. Expected True."
+    )
+    result = evaluate_field(mrp_ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    assert result.decision == Decision.REVIEW, (
+        f"Single-engine field gave {result.decision}. Expected REVIEW."
     )
 
 
