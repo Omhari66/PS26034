@@ -54,9 +54,14 @@ export interface DecisionQualityAnalytics {
   total_inspections: number;
   review_count: number;
   review_rate_percentage: number;
+  weekly_total_inspections?: number;
+  weekly_review_count?: number;
+  weekly_review_rate_percentage?: number;
   overridden_reviews_count: number;
   confirmed_reviews_count: number;
   override_rate_percentage: number;
+  confirmation_rate_percentage?: number;
   decision_counts: Record<string, number>;
   top_review_trigger_fields: DecisionQualityFieldTrigger[];
 }
+

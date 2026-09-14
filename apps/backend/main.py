@@ -27,7 +27,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from packages.shared_schema import Decision, EvidenceState  # noqa: E402, F401
 
 from app.db import Base, engine  # noqa: E402
-from app.routers import auth, inspections, rules  # noqa: E402
+from app.routers import analytics, auth, inspections, rules  # noqa: E402
 from app.services.applicability import CURRENT_RULE_VERSION  # noqa: E402
 
 
@@ -87,6 +87,8 @@ app.mount("/static/images", StaticFiles(directory=str(_images_dir)), name="stati
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(inspections.router, prefix="/api/v1")
 app.include_router(rules.router, prefix="/api/v1")
+app.include_router(analytics.router, prefix="/api/v1")
+
 
 
 @app.get("/health", tags=["meta"])
