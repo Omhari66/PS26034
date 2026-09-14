@@ -1,12 +1,14 @@
 {
   "version": "1.0",
-  "phase": "Phase 2.5 Calibration",
+  "phase": "Phase 2.5 Calibration Dataset",
   "owner": "Rahman (Member 5 - Legal Metrology)",
+  "total_samples": 50,
   "samples": [
     {
       "sample_id": "PKG-001",
       "brand": "Parle-G",
-      "category": "Biscuits & Confectionery",
+      "category": "packaged_food",
+      "product_name": "Glucose Biscuits",
       "panels_captured": {
         "front": true,
         "back": true,
@@ -19,25 +21,938 @@
         "manufacturer": "Parle Biscuits Pvt Ltd",
         "consumer_care": "1800-222-211"
       },
-      "adversarial_notes": "None - Standard compliant control sample"
+      "adversarial_notes": "Standard compliant control sample"
     },
     {
       "sample_id": "PKG-002",
-      "brand": "Local Spice Blend",
-      "category": "Spices & Condiments",
+      "brand": "Maggi",
+      "category": "packaged_food",
+      "product_name": "2-Minute Masala Noodles",
       "panels_captured": {
         "front": true,
         "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "14.00",
+        "net_quantity": "70g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Nestle India Limited",
+        "consumer_care": "1800-103-1947"
+      },
+      "adversarial_notes": "Standard compliant multi-pack unit"
+    },
+    {
+      "sample_id": "PKG-003",
+      "brand": "Amul",
+      "category": "dairy",
+      "product_name": "Pasteurised Butter",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "56.00",
+        "net_quantity": "100g",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Gujarat Cooperative Milk Marketing Federation Ltd",
+        "consumer_care": "1800-258-3333"
+      },
+      "adversarial_notes": "Standard dairy declaration"
+    },
+    {
+      "sample_id": "PKG-004",
+      "brand": "Fortune",
+      "category": "edible_oil",
+      "product_name": "Sunlite Refined Sunflower Oil",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "155.00",
+        "net_quantity": "1l",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Adani Wilmar Limited",
+        "consumer_care": "1800-233-9999"
+      },
+      "adversarial_notes": "Standard edible oil pouch"
+    },
+    {
+      "sample_id": "PKG-005",
+      "brand": "Tata Salt",
+      "category": "packaged_food",
+      "product_name": "Vacuum Evaporated Iodised Salt",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "28.00",
+        "net_quantity": "1kg",
+        "manufacturing_date": "05/2026",
+        "manufacturer": "Tata Consumer Products Ltd",
+        "consumer_care": "1800-108-4488"
+      },
+      "adversarial_notes": "Standard 1kg staple pack"
+    },
+    {
+      "sample_id": "PKG-006",
+      "brand": "Dettol",
+      "category": "cosmetics",
+      "product_name": "Original Germ Protection Soap",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "42.00",
+        "net_quantity": "75g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Reckitt Benckiser India Pvt Ltd",
+        "consumer_care": "1800-102-7245"
+      },
+      "adversarial_notes": "Standard personal care bar"
+    },
+    {
+      "sample_id": "PKG-007",
+      "brand": "Lays",
+      "category": "packaged_food",
+      "product_name": "India Magic Masala Potato Chips",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "20.00",
+        "net_quantity": "50g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "PepsiCo India Holdings Pvt Ltd",
+        "consumer_care": "1800-224-020"
+      },
+      "adversarial_notes": "Standard snacks bag"
+    },
+    {
+      "sample_id": "PKG-008",
+      "brand": "Colgate",
+      "category": "cosmetics",
+      "product_name": "Strong Teeth Dental Cream",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "65.00",
+        "net_quantity": "100g",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Colgate-Palmolive India Ltd",
+        "consumer_care": "1800-225-599"
+      },
+      "adversarial_notes": "Standard oral care tube"
+    },
+    {
+      "sample_id": "PKG-009",
+      "brand": "Aashirvaad",
+      "category": "packaged_food",
+      "product_name": "Superior MP Whole Wheat Atta",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "260.00",
+        "net_quantity": "5kg",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "ITC Limited",
+        "consumer_care": "1800-425-4444"
+      },
+      "adversarial_notes": "Standard staple packaging"
+    },
+    {
+      "sample_id": "PKG-010",
+      "brand": "Britannia",
+      "category": "packaged_food",
+      "product_name": "Good Day Cashew Cookies",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "35.00",
+        "net_quantity": "200g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Britannia Industries Ltd",
+        "consumer_care": "1800-425-4449"
+      },
+      "adversarial_notes": "Standard bakery pack"
+    },
+    {
+      "sample_id": "PKG-011",
+      "brand": "Dove",
+      "category": "cosmetics",
+      "product_name": "Nourishing Body Wash",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "199.00",
+        "net_quantity": "190ml",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Hindustan Unilever Ltd",
+        "consumer_care": "1800-102-2221"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-012",
+      "brand": "Saffola",
+      "category": "edible_oil",
+      "product_name": "Gold Pro Healthy Light Oil",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "185.00",
+        "net_quantity": "1l",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Marico Limited",
+        "consumer_care": "1800-222-248"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-013",
+      "brand": "Haldirams",
+      "category": "packaged_food",
+      "product_name": "Aloo Bhujia Sev",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "55.00",
+        "net_quantity": "150g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Haldiram Snacks Pvt Ltd",
+        "consumer_care": "0120-2400190"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-014",
+      "brand": "Brooke Bond",
+      "category": "packaged_food",
+      "product_name": "Red Label Natural Care Tea",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "140.00",
+        "net_quantity": "250g",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Hindustan Unilever Ltd",
+        "consumer_care": "1800-102-2221"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-015",
+      "brand": "Nescafe",
+      "category": "packaged_food",
+      "product_name": "Classic Instant Coffee Powder",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "175.00",
+        "net_quantity": "50g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Nestle India Limited",
+        "consumer_care": "1800-103-1947"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-016",
+      "brand": "Cadbury",
+      "category": "packaged_food",
+      "product_name": "Dairy Milk Silk Chocolate",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "80.00",
+        "net_quantity": "60g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Mondelez India Foods Pvt Ltd",
+        "consumer_care": "1800-227-080"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-017",
+      "brand": "Kissan",
+      "category": "packaged_food",
+      "product_name": "Fresh Tomato Ketchup",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "125.00",
+        "net_quantity": "950g",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Hindustan Unilever Ltd",
+        "consumer_care": "1800-102-2221"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-018",
+      "brand": "Dabur",
+      "category": "packaged_food",
+      "product_name": "100% Pure Natural Honey",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "220.00",
+        "net_quantity": "500g",
+        "manufacturing_date": "05/2026",
+        "manufacturer": "Dabur India Ltd",
+        "consumer_care": "1800-103-1644"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-019",
+      "brand": "Everest",
+      "category": "packaged_food",
+      "product_name": "Chhole Masala Powder",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "42.00",
+        "net_quantity": "100g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "S Narendrakumar and Co",
+        "consumer_care": "1800-229-999"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-020",
+      "brand": "MDH",
+      "category": "packaged_food",
+      "product_name": "Deggi Mirch Red Pepper",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "85.00",
+        "net_quantity": "100g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Mahashian Di Hatti Pvt Ltd",
+        "consumer_care": "011-25501818"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-021",
+      "brand": "Surf Excel",
+      "category": "household",
+      "product_name": "Quick Wash Detergent Powder",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "135.00",
+        "net_quantity": "1kg",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Hindustan Unilever Ltd",
+        "consumer_care": "1800-102-2221"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-022",
+      "brand": "Vim",
+      "category": "household",
+      "product_name": "Lemon Dishwash Gel",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "110.00",
+        "net_quantity": "500ml",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Hindustan Unilever Ltd",
+        "consumer_care": "1800-102-2221"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-023",
+      "brand": "Lizol",
+      "category": "household",
+      "product_name": "Disinfectant Surface Cleaner",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "120.00",
+        "net_quantity": "500ml",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Reckitt Benckiser India Pvt Ltd",
+        "consumer_care": "1800-102-7245"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-024",
+      "brand": "Good Knight",
+      "category": "household",
+      "product_name": "Gold Flash Liquid Vapouriser",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "82.00",
+        "net_quantity": "45ml",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Godrej Consumer Products Ltd",
+        "consumer_care": "1800-266-0007"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-025",
+      "brand": "Parachute",
+      "category": "cosmetics",
+      "product_name": "100% Pure Coconut Hair Oil",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "115.00",
+        "net_quantity": "300ml",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Marico Limited",
+        "consumer_care": "1800-222-248"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-026",
+      "brand": "Head & Shoulders",
+      "category": "cosmetics",
+      "product_name": "Cool Menthol Anti-Dandruff Shampoo",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "190.00",
+        "net_quantity": "180ml",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Procter and Gamble Hygiene Ltd",
+        "consumer_care": "1800-202-1364"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-027",
+      "brand": "Nivea",
+      "category": "cosmetics",
+      "product_name": "Soft Light Moisturiser Cream",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "180.00",
+        "net_quantity": "100ml",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Nivea India Pvt Ltd",
+        "consumer_care": "1800-266-4832"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-028",
+      "brand": "Vaseline",
+      "category": "cosmetics",
+      "product_name": "Deep Moisture Body Lotion",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "245.00",
+        "net_quantity": "200ml",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Hindustan Unilever Ltd",
+        "consumer_care": "1800-102-2221"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-029",
+      "brand": "Mother Dairy",
+      "category": "dairy",
+      "product_name": "Toned Cow Milk Pouch",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "30.00",
+        "net_quantity": "500ml",
+        "manufacturing_date": "09/2026",
+        "manufacturer": "Mother Dairy Fruit and Veg Pvt Ltd",
+        "consumer_care": "1800-180-1018"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-030",
+      "brand": "Amul Cheese",
+      "category": "dairy",
+      "product_name": "Processed Cheese Cubes",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "130.00",
+        "net_quantity": "200g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Gujarat Cooperative Milk Federation",
+        "consumer_care": "1800-258-3333"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-031",
+      "brand": "Real",
+      "category": "beverages",
+      "product_name": "Fruit Power Cranberry Nectar",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "120.00",
+        "net_quantity": "1l",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Dabur India Ltd",
+        "consumer_care": "1800-103-1644"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-032",
+      "brand": "Thums Up",
+      "category": "beverages",
+      "product_name": "Charged Carbonated Soft Drink",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "40.00",
+        "net_quantity": "750ml",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Hindustan Coca-Cola Beverages Ltd",
+        "consumer_care": "1800-208-2653"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-033",
+      "brand": "Kurkure",
+      "category": "packaged_food",
+      "product_name": "Solid Masti Twistee Namkeen",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "20.00",
+        "net_quantity": "80g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "PepsiCo India Holdings Pvt Ltd",
+        "consumer_care": "1800-224-020"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-034",
+      "brand": "Sunfeast",
+      "category": "packaged_food",
+      "product_name": "Dark Fantasy Choco Fills",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "40.00",
+        "net_quantity": "75g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "ITC Limited",
+        "consumer_care": "1800-425-4444"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-035",
+      "brand": "Catch",
+      "category": "packaged_food",
+      "product_name": "Pure Black Pepper Table Salt",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "55.00",
+        "net_quantity": "100g",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "DS Spiceco Pvt Ltd",
+        "consumer_care": "1800-103-0303"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-036",
+      "brand": "India Gate",
+      "category": "packaged_food",
+      "product_name": "Feast Rozzana Basmati Rice",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "110.00",
+        "net_quantity": "1kg",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "KRBL Limited",
+        "consumer_care": "1800-102-7777"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-037",
+      "brand": "Bambino",
+      "category": "packaged_food",
+      "product_name": "Roasted Wheat Vermicelli",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "32.00",
+        "net_quantity": "400g",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Bambino Agro Industries Ltd",
+        "consumer_care": "040-44363636"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-038",
+      "brand": "Kelloggs",
+      "category": "packaged_food",
+      "product_name": "Corn Flakes Original Cereal",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "165.00",
+        "net_quantity": "475g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Kellogg India Pvt Ltd",
+        "consumer_care": "1800-223-500"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-039",
+      "brand": "Tropicana",
+      "category": "beverages",
+      "product_name": "100% Orange Juice Tetra",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "130.00",
+        "net_quantity": "1l",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Varun Beverages Limited",
+        "consumer_care": "1800-224-020"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-040",
+      "brand": "Oreo",
+      "category": "packaged_food",
+      "product_name": "Vanilla Creme Sandwich Cookies",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "35.00",
+        "net_quantity": "120g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Mondelez India Foods Pvt Ltd",
+        "consumer_care": "1800-227-080"
+      },
+      "adversarial_notes": "Standard verified FMCG control sample"
+    },
+    {
+      "sample_id": "PKG-041",
+      "brand": "Festive Sweet Box",
+      "category": "packaged_food",
+      "product_name": "Kaju Katli Special",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "350.00",
+        "net_quantity": "400g",
+        "manufacturing_date": "09/2026",
+        "manufacturer": "Bikaji Foods International Ltd",
+        "consumer_care": "1800-120-1111"
+      },
+      "adversarial_notes": "Adversarial MRP: Has both MRP Rs.350 and Offer Rs.299 printed. Engine must select 350.00."
+    },
+    {
+      "sample_id": "PKG-042",
+      "brand": "Desi Namkeen",
+      "category": "packaged_food",
+      "product_name": "Bikaneri Mixture",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "60.00",
+        "net_quantity": "200g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Local Farsan Udyog",
+        "consumer_care": null
+      },
+      "adversarial_notes": "Adversarial Consumer Care: Fully photographed, consumer care genuinely absent. Must FAIL."
+    },
+    {
+      "sample_id": "PKG-043",
+      "brand": "Herbal Herbal",
+      "category": "cosmetics",
+      "product_name": "Neem Face Cleanser",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "120.00",
+        "net_quantity": "100ml",
+        "manufacturing_date": "06/2026",
+        "manufacturer": "Marketed by Natural Care LLP",
+        "consumer_care": "1800-111-222"
+      },
+      "adversarial_notes": "Adversarial Manufacturer: Label has ONLY Marketed by, missing required Manufactured by. Must REVIEW/FAIL."
+    },
+    {
+      "sample_id": "PKG-044",
+      "brand": "Golden Rusk",
+      "category": "packaged_food",
+      "product_name": "Crispy Toast",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "40.00",
+        "net_quantity": "200g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Sunrise Bakeries",
+        "consumer_care": "UNVERIFIED_BARE_CONTACT:022-26881920"
+      },
+      "adversarial_notes": "Adversarial Contact: Bare factory landline printed in address block without consumer care context. Must REVIEW."
+    },
+    {
+      "sample_id": "PKG-045",
+      "brand": "Pure Desi Ghee",
+      "category": "dairy",
+      "product_name": "Cow Ghee Tin",
+      "panels_captured": {
+        "front": true,
+        "back": false,
         "close_up": false
       },
       "ground_truth": {
-        "mrp": "45.00",
-        "net_quantity": "100g",
-        "manufacturing_date": "05/2026",
-        "manufacturer": "Marketed by Spice Traders India",
+        "mrp": "620.00",
+        "net_quantity": "1l",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Gomata Dairy Farms",
         "consumer_care": null
       },
-      "adversarial_notes": "Adversarial: Genuinely missing Consumer Care number and missing 'Manufactured by' entity (has Marketed by only). Must FAIL under full coverage."
+      "adversarial_notes": "Adversarial Coverage: Back panel NOT photographed. Missing consumer care must produce REVIEW, not FAIL."
+    },
+    {
+      "sample_id": "PKG-046",
+      "brand": "Himalayan Organic",
+      "category": "packaged_food",
+      "product_name": "Raw Mountain Honey",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "290.00",
+        "net_quantity": "500",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Pristine Hills Organics",
+        "consumer_care": "1800-888-999"
+      },
+      "adversarial_notes": "Adversarial Quantity: Bare numeric 500 printed without legal metrology unit (g/ml). Must REVIEW."
+    },
+    {
+      "sample_id": "PKG-047",
+      "brand": "Assam Chai",
+      "category": "packaged_food",
+      "product_name": "Strong CTC Tea Leaf",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "1O0.00",
+        "net_quantity": "250g",
+        "manufacturing_date": "07/2026",
+        "manufacturer": "Upper Assam Tea Corp",
+        "consumer_care": "care@assamchai.in"
+      },
+      "adversarial_notes": "Adversarial Price: Letter O typo in price 1O0.00. Non-numeric must produce REVIEW."
+    },
+    {
+      "sample_id": "PKG-048",
+      "brand": "Patanjali",
+      "category": "packaged_food",
+      "product_name": "Dant Kanti Toothpaste",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "90.00",
+        "net_quantity": "200g",
+        "manufacturing_date": "08/2026",
+        "manufacturer": "Patanjali Ayurved Ltd",
+        "consumer_care": "1800-180-4108"
+      },
+      "adversarial_notes": "Bilingual package: Dual Hindi and English declarations."
+    },
+    {
+      "sample_id": "PKG-049",
+      "brand": "Malai Paneer",
+      "category": "dairy",
+      "product_name": "Fresh Cottage Cheese",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": "85.00",
+        "net_quantity": "200g",
+        "manufacturing_date": "09/2026",
+        "manufacturer": "Kwality Dairy India Ltd",
+        "consumer_care": "1800-123-7777"
+      },
+      "adversarial_notes": "Perishable dairy item with both Mfg date and Best Before date."
+    },
+    {
+      "sample_id": "PKG-050",
+      "brand": "Local Chemical",
+      "category": "household",
+      "product_name": "Instant Hand Cleaner",
+      "panels_captured": {
+        "front": true,
+        "back": true,
+        "close_up": true
+      },
+      "ground_truth": {
+        "mrp": null,
+        "net_quantity": "100ml",
+        "manufacturing_date": "05/2026",
+        "manufacturer": "Unregistered Small Scale Unit",
+        "consumer_care": null
+      },
+      "adversarial_notes": "Severe non-compliance: Both MRP and Consumer Care absent on full capture. Must FAIL."
     }
   ]
 }

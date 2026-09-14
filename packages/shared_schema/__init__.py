@@ -46,6 +46,7 @@ InspectionReport = _engine.InspectionReport
 evaluate_field = _engine.evaluate_field
 aggregate_overall = _engine.aggregate_overall
 build_report = _engine.build_report
+CONF_THRESHOLD = _engine.CONF_THRESHOLD
 # Validator functions — importable for wiring and testing
 validate_mrp = _engine.validate_mrp
 validate_quantity = _engine.validate_quantity
@@ -54,6 +55,7 @@ validate_manufacturer = _engine.validate_manufacturer
 validate_consumer_care = _engine.validate_consumer_care
 
 __all__ = [
+    "CONF_THRESHOLD",
     "EvidenceState",
     "Decision",
     "FieldEvidence",
