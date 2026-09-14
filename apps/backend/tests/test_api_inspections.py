@@ -18,44 +18,119 @@ DB: SQLite in-memory via conftest.py — no Postgres needed.
 # These are the "hand-crafted fixtures" Phase 1 is defined around.
 
 _ALL_PASS_EVIDENCES = [
-    {"field_name": "mrp", "state": "FOUND", "value": "149.00",
-     "source_image": "front.jpg", "bbox": [10, 20, 200, 80],
-     "ocr_engine": "paddleocr", "ocr_confidence": 0.94},
-    {"field_name": "net_quantity", "state": "FOUND", "value": "500g",
-     "ocr_engine": "paddleocr", "ocr_confidence": 0.91},
-    {"field_name": "manufacturing_date", "state": "FOUND", "value": "2025-01-01",
-     "ocr_engine": "paddleocr", "ocr_confidence": 0.87},
-    {"field_name": "manufacturer_name", "state": "FOUND", "value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
-     "ocr_engine": "paddleocr", "ocr_confidence": 0.88},
-    {"field_name": "consumer_care", "state": "FOUND", "value": "1800-000-000",
-     "ocr_engine": "paddleocr", "ocr_confidence": 0.85},
+    {
+        "field_name": "mrp",
+        "state": "FOUND",
+        "value": "149.00",
+        "secondary_value": "149.00",
+        "source_image": "front.jpg",
+        "bbox": [10, 20, 200, 80],
+        "ocr_engine": "paddleocr",
+        "ocr_confidence": 0.94,
+    },
+    {
+        "field_name": "net_quantity",
+        "state": "FOUND",
+        "value": "500g",
+        "secondary_value": "500g",
+        "ocr_engine": "paddleocr",
+        "ocr_confidence": 0.91,
+    },
+    {
+        "field_name": "manufacturing_date",
+        "state": "FOUND",
+        "value": "2025-01-01",
+        "secondary_value": "2025-01-01",
+        "ocr_engine": "paddleocr",
+        "ocr_confidence": 0.87,
+    },
+    {
+        "field_name": "manufacturer_name",
+        "state": "FOUND",
+        "value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "secondary_value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "ocr_engine": "paddleocr",
+        "ocr_confidence": 0.88,
+    },
+    {
+        "field_name": "consumer_care",
+        "state": "FOUND",
+        "value": "1800-000-000",
+        "secondary_value": "1800-000-000",
+        "ocr_engine": "paddleocr",
+        "ocr_confidence": 0.85,
+    },
 ]
 
 _MIXED_EVIDENCES = [
     # mrp: PASS
-    {"field_name": "mrp", "state": "FOUND", "value": "149.00", "ocr_confidence": 0.94},
+    {
+        "field_name": "mrp",
+        "state": "FOUND",
+        "value": "149.00",
+        "secondary_value": "149.00",
+        "ocr_confidence": 0.94,
+    },
     # net_quantity: PASS
-    {"field_name": "net_quantity", "state": "FOUND", "value": "500g", "ocr_confidence": 0.91},
+    {
+        "field_name": "net_quantity",
+        "state": "FOUND",
+        "value": "500g",
+        "secondary_value": "500g",
+        "ocr_confidence": 0.91,
+    },
     # manufacturing_date: REVIEW (NOT_VERIFIABLE)
     {"field_name": "manufacturing_date", "state": "NOT_VERIFIABLE", "image_quality": "low"},
     # manufacturer_name: PASS
-    {"field_name": "manufacturer_name", "state": "FOUND", "value": '[{"role": "manufactured by", "name": "Acme Corp"}]', "ocr_confidence": 0.88},  # noqa: E501
+    {
+        "field_name": "manufacturer_name",
+        "state": "FOUND",
+        "value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "secondary_value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "ocr_confidence": 0.88,
+    },  # noqa: E501
     # consumer_care: FAIL (NOT_FOUND, required)
     {"field_name": "consumer_care", "state": "NOT_FOUND"},
 ]
 
 _REVIEW_ONLY_EVIDENCES = [
-    {"field_name": "mrp", "state": "FOUND", "value": "149.00", "ocr_confidence": 0.94},
-    {"field_name": "net_quantity", "state": "FOUND", "value": "500g", "ocr_confidence": 0.91},
+    {
+        "field_name": "mrp",
+        "state": "FOUND",
+        "value": "149.00",
+        "secondary_value": "149.00",
+        "ocr_confidence": 0.94,
+    },
+    {
+        "field_name": "net_quantity",
+        "state": "FOUND",
+        "value": "500g",
+        "secondary_value": "500g",
+        "ocr_confidence": 0.91,
+    },
     {"field_name": "manufacturing_date", "state": "NOT_VERIFIABLE", "image_quality": "low"},
-    {"field_name": "manufacturer_name", "state": "FOUND", "value": '[{"role": "manufactured by", "name": "Acme Corp"}]', "ocr_confidence": 0.88},  # noqa: E501
-    {"field_name": "consumer_care", "state": "FOUND", "value": "1800-000-000", "ocr_confidence": 0.85},  # noqa: E501
+    {
+        "field_name": "manufacturer_name",
+        "state": "FOUND",
+        "value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "secondary_value": '[{"role": "manufactured by", "name": "Acme Corp"}]',
+        "ocr_confidence": 0.88,
+    },  # noqa: E501
+    {
+        "field_name": "consumer_care",
+        "state": "FOUND",
+        "value": "1800-000-000",
+        "secondary_value": "1800-000-000",
+        "ocr_confidence": 0.85,
+    },  # noqa: E501
 ]
 
 _COVERAGE = {"front": True, "back": True, "close_up": False}
 
 
-def _create_and_submit(client, category: str, evidences: list, coverage: dict = _COVERAGE, corrections: list = None):
+def _create_and_submit(
+    client, category: str, evidences: list, coverage: dict = _COVERAGE, corrections: list = None
+):
     """Helper: full 3-step flow → returns the report response dict."""
     # 1. Create
     r = client.post("/api/v1/inspections", json={"inspector_id": "inspector_001"})
@@ -90,6 +165,7 @@ class TestCreateInspection:
 
     def test_inspection_id_is_uuid_string(self, client):
         import uuid
+
         r = client.post("/api/v1/inspections", json={"inspector_id": "inspector_001"})
         insp_id = r.json()["inspection_id"]
         uuid.UUID(insp_id)  # raises if not a valid UUID
@@ -121,15 +197,33 @@ class TestSubmitInspection:
 
     def test_mixed_evidences_produces_fail(self, client):
         """consumer_care NOT_FOUND (FAIL) beats mfg_date NOT_VERIFIABLE (REVIEW) → FAIL."""
-        corrections = [{"field_name": "manufacturing_date", "action": "confirmed", "reviewer_id": "inspector_001", "acknowledged": True}]
-        _, report = _create_and_submit(client, "packaged_food", _MIXED_EVIDENCES, corrections=corrections)
+        corrections = [
+            {
+                "field_name": "manufacturing_date",
+                "action": "confirmed",
+                "reviewer_id": "inspector_001",
+                "acknowledged": True,
+            }
+        ]
+        _, report = _create_and_submit(
+            client, "packaged_food", _MIXED_EVIDENCES, corrections=corrections
+        )
         assert report["overall_decision"] == "FAIL"
 
     def test_one_not_verifiable_no_fail_produces_review(self, client):
         """4 PASS + 1 REVIEW, no FAIL → overall REVIEW. (But since we correct it, it's PASS)"""
-        corrections = [{"field_name": "manufacturing_date", "action": "confirmed", "reviewer_id": "inspector_001", "acknowledged": True}]
-        _, report = _create_and_submit(client, "packaged_food", _REVIEW_ONLY_EVIDENCES, corrections=corrections)
-        assert report["overall_decision"] == "PASS"
+        corrections = [
+            {
+                "field_name": "manufacturing_date",
+                "action": "escalated",
+                "reviewer_id": "inspector_001",
+                "acknowledged": True,
+            }
+        ]
+        _, report = _create_and_submit(
+            client, "packaged_food", _REVIEW_ONLY_EVIDENCES, corrections=corrections
+        )
+        assert report["overall_decision"] == "REVIEW"
 
     def test_unsupported_category_produces_category_not_supported(self, client):
         """Category not in SUPPORTED_CATEGORIES → CATEGORY_NOT_SUPPORTED."""
@@ -143,12 +237,21 @@ class TestSubmitInspection:
 
     def test_report_field_decisions_correct(self, client):
         """Per-field decisions match expected outcomes for the mixed fixture."""
-        corrections = [{"field_name": "manufacturing_date", "action": "confirmed", "reviewer_id": "inspector_001", "acknowledged": True}]
-        _, report = _create_and_submit(client, "packaged_food", _MIXED_EVIDENCES, corrections=corrections)
+        corrections = [
+            {
+                "field_name": "manufacturing_date",
+                "action": "confirmed",
+                "reviewer_id": "inspector_001",
+                "acknowledged": True,
+            }
+        ]
+        _, report = _create_and_submit(
+            client, "packaged_food", _MIXED_EVIDENCES, corrections=corrections
+        )
         decisions = {fr["field_name"]: fr["decision"] for fr in report["field_results"]}
         assert decisions["mrp"] == "PASS"
         assert decisions["net_quantity"] == "PASS"
-        assert decisions["manufacturing_date"] == "PASS" # Corrected!
+        assert decisions["manufacturing_date"] == "PASS"  # Corrected!
         assert decisions["manufacturer_name"] == "PASS"
         assert decisions["consumer_care"] == "FAIL"
 
@@ -223,8 +326,17 @@ class TestGetInspection:
 
     def test_get_mixed_report_has_correct_field_decisions(self, client):
         """GET of a mixed-evidence report shows the same per-field decisions."""
-        corrections = [{"field_name": "manufacturing_date", "action": "confirmed", "reviewer_id": "inspector_001", "acknowledged": True}]
-        insp_id, _ = _create_and_submit(client, "packaged_food", _MIXED_EVIDENCES, corrections=corrections)
+        corrections = [
+            {
+                "field_name": "manufacturing_date",
+                "action": "confirmed",
+                "reviewer_id": "inspector_001",
+                "acknowledged": True,
+            }
+        ]
+        insp_id, _ = _create_and_submit(
+            client, "packaged_food", _MIXED_EVIDENCES, corrections=corrections
+        )
         r = client.get(f"/api/v1/inspections/{insp_id}")
         decisions = {fr["field_name"]: fr["decision"] for fr in r.json()["field_results"]}
         assert decisions["consumer_care"] == "FAIL"

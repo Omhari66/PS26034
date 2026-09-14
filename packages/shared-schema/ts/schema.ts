@@ -57,6 +57,8 @@ export interface FieldEvidence {
   image_quality?: "high" | "medium" | "low" | null;
   /** For CONFLICTING: all raw readings seen */
   candidates?: string[];
+  /** Gap 2: True when secondary engine was unavailable */
+  single_engine_only?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +79,7 @@ export interface RuleResult {
 // ---------------------------------------------------------------------------
 
 export interface InspectionReport {
+  inspection_id: string;
   product_id: string;
   category: string;
   rule_version: string;

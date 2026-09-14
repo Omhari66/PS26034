@@ -23,7 +23,7 @@ class LoginRequest(BaseModel):
 
 class LoginResponse(BaseModel):
     token: str
-    role: str   # "inspector" | "supervisor"
+    role: str  # "inspector" | "supervisor"
     email: str
 
 

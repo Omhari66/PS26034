@@ -12,10 +12,9 @@ See ARCHITECTURE.md for the authoritative path reference.
 """
 
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
-
 
 # ---------------------------------------------------------------------------
 # Evidence states — what we actually know about a field
@@ -54,13 +53,13 @@ _DECISION_PRIORITY = [
 class FieldEvidence:
     field_name: str                       # e.g. "mrp", "net_quantity"
     state: EvidenceState
-    value: Optional[str] = None           # normalized extracted value, if any
-    source_image: Optional[str] = None
-    bbox: Optional[tuple] = None          # (x1, y1, x2, y2) in ORIGINAL image coords
-    ocr_engine: Optional[str] = None
-    ocr_confidence: Optional[float] = None
-    secondary_value: Optional[str] = None # from cross-check OCR, if run
-    image_quality: Optional[str] = None   # "high" | "medium" | "low"
+    value: str | None = None           # normalized extracted value, if any
+    source_image: str | None = None
+    bbox: tuple | None = None          # (x1, y1, x2, y2) in ORIGINAL image coords
+    ocr_engine: str | None = None
+    ocr_confidence: float | None = None
+    secondary_value: str | None = None # from cross-check OCR, if run
+    image_quality: str | None = None   # "high" | "medium" | "low"
     candidates: list = field(default_factory=list)  # for CONFLICTING: all readings seen
     single_engine_only: bool = False      # True = second engine unavailable; caps at REVIEW
                                           # See ARCHITECTURE.md Known Decisions for context
@@ -163,7 +162,6 @@ def validate_date(
 
     return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Date", evidence)
 
-
 def validate_manufacturer(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
 ) -> RuleResult:
@@ -174,26 +172,46 @@ def validate_manufacturer(
     import json
     try:
         pairs = json.loads(evidence.value)
-    except Exception:
+    except ValueError:
         pairs = []
         
     if not pairs:
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Could not parse manufacturer roles from {evidence.value}", evidence)
         
-    has_mfr_or_packer = any("manufactured by" in p["role"] or "mfd" in p["role"] or "packed by" in p["role"] for p in pairs)
-    has_marketed = any("marketed by" in p["role"] for p in pairs)
+    # Check for the exact role keys output by your extractor (with underscores)
+    has_mfr_or_packer = any(
+        x in p.get("role", "").lower()
+        for p in pairs
+        for x in ["manufactured", "mfd", "mfr", "packed"]
+    )
+
+    has_marketed = any("marketed" in p.get("role", "").lower() for p in pairs)
     
+    # Enforce the legal rule: Marketers do not satisfy the manufacturer requirement
     if not has_mfr_or_packer and has_marketed:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Found 'Marketed by' but missing required 'Manufactured by' or 'Packed by' legal entity", evidence)
+        return RuleResult(
+            rule.rule_id, 
+            rule.rule_version, 
+            evidence.field_name, 
+            Decision.REVIEW, 
+            "Found 'Marketed by' but missing required 'Manufactured by' or 'Packed by' legal entity", 
+            evidence
+        )
         
     if not has_mfr_or_packer:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Missing required 'Manufactured by' or 'Packed by' role", evidence)
+        return RuleResult(
+            rule.rule_id, 
+            rule.rule_version, 
+            evidence.field_name, 
+            Decision.REVIEW, 
+            "Missing required 'Manufactured by' or 'Packed by' role", 
+            evidence
+        )
 
     if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"OCR confidence too low ({evidence.ocr_confidence:.2f})", evidence)
 
     return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Manufacturer/Packer", evidence)
-
 
 def validate_consumer_care(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule

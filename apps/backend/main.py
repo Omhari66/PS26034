@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 # In production, install packages/shared-schema as a proper local package.
 _repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _repo_root not in sys.path:
-    sys.path.insert(0, _repo_root)
+    sys.path.append(_repo_root)
 
 from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
@@ -27,7 +27,7 @@ from fastapi.responses import JSONResponse  # noqa: E402
 from packages.shared_schema import Decision, EvidenceState  # noqa: E402, F401
 
 from app.db import Base, engine  # noqa: E402
-from app.routers import auth, inspections, rules  # noqa: E402
+from app.routers import analytics, auth, inspections, rules  # noqa: E402
 from app.services.applicability import CURRENT_RULE_VERSION  # noqa: E402
 
 
@@ -60,9 +60,9 @@ app = FastAPI(
 # Must be registered before routers so preflight OPTIONS requests are handled.
 # TODO(production): replace allow_origins with the real deployed domain.
 _CORS_ORIGINS = [
-    "http://localhost:3000",   # Next.js dashboard
+    "http://localhost:3000",  # Next.js dashboard
     "http://127.0.0.1:3000",
-    "http://localhost:8081",   # Expo web
+    "http://localhost:8081",  # Expo web
     "http://localhost:19000",  # Expo DevTools
     "exp://localhost:8081",
 ]
@@ -76,9 +76,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from pathlib import Path  # noqa: E402
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+# Mount static images directory for web dashboard evidence viewer
+_images_dir = Path(__file__).parent / "app" / "data" / "images"
+_images_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/static/images", StaticFiles(directory=str(_images_dir)), name="static_images")
+
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(inspections.router, prefix="/api/v1")
 app.include_router(rules.router, prefix="/api/v1")
+app.include_router(analytics.router, prefix="/api/v1")
+
 
 
 @app.get("/health", tags=["meta"])
@@ -95,12 +106,14 @@ def health() -> JSONResponse:
     except Exception:
         db_ok = False
 
-    return JSONResponse({
-        "status": "ok",
-        "service": "ps26034-backend",
-        "version": "0.6.0",
-        "environment": os.environ.get("ENVIRONMENT", "dev"),
-        "current_rule_version": CURRENT_RULE_VERSION,
-        "supported_phases": "0-7",
-        "db": "ok" if db_ok else "error",
-    })
+    return JSONResponse(
+        {
+            "status": "ok",
+            "service": "ps26034-backend",
+            "version": "0.6.0",
+            "environment": os.environ.get("ENVIRONMENT", "dev"),
+            "current_rule_version": CURRENT_RULE_VERSION,
+            "supported_phases": "0-7",
+            "db": "ok" if db_ok else "error",
+        }
+    )

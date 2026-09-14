@@ -26,8 +26,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 # Path setup
 _ROOT = Path(__file__).parents[3]
 sys.path.insert(0, str(_ROOT / "packages" / "shared-schema"))
@@ -40,7 +38,6 @@ from packages.shared_schema import (  # noqa: E402
     aggregate_overall,
     evaluate_field,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -66,7 +63,9 @@ FRONT_ONLY    = {"front": True, "back": False, "close_up": False}
 def test_01_bare_price_not_found_full_coverage_gives_fail():
     """When MRP is genuinely not found and coverage is complete, result must be FAIL."""
     ev = _ev("mrp", EvidenceState.NOT_FOUND)
-    result = evaluate_field(ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    result = evaluate_field(
+        ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.FAIL, (
         f"NOT_FOUND + full coverage gave {result.decision}. Expected FAIL."
     )
@@ -86,8 +85,12 @@ def test_02_offer_price_not_selected_as_mrp():
     from app.ocr.engines.base import OCRResult
     from app.ocr.field_extractor import extract_field
 
-    offer_block = OCRResult(text="Offer Price Rs.149", bbox=(10, 10, 200, 40), confidence=0.96, engine_name="test")
-    mrp_block   = OCRResult(text="MRP Rs.199", bbox=(10, 50, 200, 80), confidence=0.92, engine_name="test")
+    offer_block = OCRResult(
+        text="Offer Price Rs.149", bbox=(10, 10, 200, 40), confidence=0.96, engine_name="test"
+    )
+    mrp_block = OCRResult(
+        text="MRP Rs.199", bbox=(10, 50, 200, 80), confidence=0.92, engine_name="test"
+    )
 
     result = extract_field("mrp", [offer_block, mrp_block])
     assert result is not None
@@ -102,7 +105,9 @@ def test_02_offer_price_not_selected_as_mrp():
 def test_03_not_found_front_only_gives_review_not_fail():
     """Consumer Care not found + only front captured → REVIEW, not FAIL."""
     ev = _ev("consumer_care", EvidenceState.NOT_FOUND)
-    result = evaluate_field(ev, "LM-CC-001", "v1.0", required=True, coverage=FRONT_ONLY)
+    result = evaluate_field(
+        ev, "LM-CC-001", "v1.0", required=True, coverage=FRONT_ONLY
+    )
     assert result.decision == Decision.REVIEW, (
         f"NOT_FOUND + front-only coverage gave {result.decision}. "
         "Expected REVIEW — back panel not inspected."
@@ -114,8 +119,12 @@ def test_03_not_found_front_only_gives_review_not_fail():
 # ---------------------------------------------------------------------------
 def test_04_low_confidence_gives_review():
     """FOUND + confidence 0.42 must give REVIEW, not PASS."""
-    ev = _ev("consumer_care", EvidenceState.FOUND, value="1800-123-4567", confidence=0.42)
-    result = evaluate_field(ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    ev = _ev(
+        "consumer_care", EvidenceState.FOUND, value="1800-123-4567", confidence=0.42
+    )
+    result = evaluate_field(
+        ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.REVIEW, (
         f"FOUND + conf=0.42 gave {result.decision}. Expected REVIEW."
     )
@@ -132,7 +141,9 @@ def test_05_conflicting_readings_gives_review():
         ocr_confidence=0.91,
         candidates=["199.00", "299.00"],
     )
-    result = evaluate_field(ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    result = evaluate_field(
+        ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.REVIEW, (
         f"CONFLICTING gave {result.decision}. Expected REVIEW."
     )
@@ -153,8 +164,18 @@ def test_06_mfg_date_distinct_from_best_before():
     from app.ocr.engines.base import OCRResult
     from app.ocr.field_extractor import extract_field
 
-    mfd = OCRResult(text="Manufactured: 08/2026", bbox=(10,10,200,40), confidence=0.93, engine_name="test")
-    bbd = OCRResult(text="Best Before: 12 months from mfg", bbox=(10,50,200,80), confidence=0.91, engine_name="test")
+    mfd = OCRResult(
+        text="Manufactured: 08/2026",
+        bbox=(10, 10, 200, 40),
+        confidence=0.93,
+        engine_name="test",
+    )
+    bbd = OCRResult(
+        text="Best Before: 12 months from mfg",
+        bbox=(10, 50, 200, 80),
+        confidence=0.91,
+        engine_name="test",
+    )
 
     result = extract_field("manufacturing_date", [mfd, bbd])
     assert result is not None, "No manufacturing date extracted at all"
@@ -182,8 +203,18 @@ def test_07_consumer_care_not_confused_with_sales_number():
     from app.ocr.engines.base import OCRResult
     from app.ocr.field_extractor import extract_field
 
-    care_block  = OCRResult(text="Customer Care: 1800-123-4567", bbox=(10,10,300,40), confidence=0.94, engine_name="test")
-    sales_block = OCRResult(text="Call Sales Team: 9876543210", bbox=(10,50,300,80), confidence=0.96, engine_name="test")
+    care_block = OCRResult(
+        text="Customer Care: 1800-123-4567",
+        bbox=(10, 10, 300, 40),
+        confidence=0.94,
+        engine_name="test",
+    )
+    sales_block = OCRResult(
+        text="Call Sales Team: 9876543210",
+        bbox=(10, 50, 300, 80),
+        confidence=0.96,
+        engine_name="test",
+    )
 
     result = extract_field("consumer_care", [care_block, sales_block])
     assert result is not None
@@ -196,33 +227,38 @@ def test_07_consumer_care_not_confused_with_sales_number():
 
 
 # ---------------------------------------------------------------------------
-# Test 8 — Single engine → NOT_VERIFIABLE → REVIEW (Phase 3 — xfail)
+# Test 8 — Single engine → single_engine_only=True → REVIEW (Phase 3)
 # ---------------------------------------------------------------------------
 def test_08_single_engine_gives_review_not_pass():
     """
     When secondary_engine=None is passed directly to run_pipeline, the pipeline
-    correctly returns NOT_VERIFIABLE for all critical fields.
-
-    Status: PASSES at the pipeline level. However, inspection_service.py still
-    passes secondary=primary (same engine) when PaddleOCR is unavailable, which
-    means this protection never fires in production. The service-level fix is
-    tracked in PHASES.md Phase 3.
+    preserves primary evidence and sets single_engine_only=True for critical fields,
+    which evaluate_field() caps at REVIEW (cannot earn PASS).
     """
     from unittest.mock import MagicMock
+
     from app.ocr.pipeline import run_pipeline
 
     primary = MagicMock()
     primary.name = "mock"
     primary.recognize.return_value = [
-        MagicMock(text="MRP Rs.199", bbox=(10,10,200,40), confidence=0.91, engine_name="mock")
+        MagicMock(
+            text="MRP Rs.199", bbox=(10, 10, 200, 40), confidence=0.91, engine_name="mock"
+        )
     ]
 
     # Directly passing None works correctly at the pipeline level:
-    evidences = run_pipeline(image_paths=["fake.jpg"], primary_engine=primary, secondary_engine=None)
+    evidences, _ = run_pipeline(
+        image_paths=["fake.jpg"], primary_engine=primary, secondary_engine=None
+    )
     mrp_ev = next((e for e in evidences if e.field_name == "mrp"), None)
     assert mrp_ev is not None
-    assert mrp_ev.state == EvidenceState.NOT_VERIFIABLE, (
-        f"Single-engine MRP state={mrp_ev.state}. Expected NOT_VERIFIABLE."
+    assert mrp_ev.single_engine_only is True, (
+        f"Single-engine MRP single_engine_only={mrp_ev.single_engine_only}. Expected True."
+    )
+    result = evaluate_field(mrp_ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    assert result.decision == Decision.REVIEW, (
+        f"Single-engine field gave {result.decision}. Expected REVIEW."
     )
 
 
@@ -238,7 +274,9 @@ def test_09_not_verifiable_gives_review():
     detection (Phase 3) is the missing piece.
     """
     ev = _ev("consumer_care", EvidenceState.NOT_VERIFIABLE)
-    result = evaluate_field(ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    result = evaluate_field(
+        ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.REVIEW, (
         f"NOT_VERIFIABLE gave {result.decision}. Expected REVIEW."
     )
@@ -259,8 +297,12 @@ def test_10_all_low_confidence_overall_review():
     results = []
     for field, rule_id in fields_rules.items():
         ev = _ev(field, EvidenceState.FOUND, value="x", confidence=0.45)
-        rr = evaluate_field(ev, rule_id, "v1.0", required=True, coverage=FULL_COVERAGE)
-        assert rr.decision == Decision.REVIEW, f"{field}: conf=0.45 gave {rr.decision}, expected REVIEW"
+        rr = evaluate_field(
+            ev, rule_id, "v1.0", required=True, coverage=FULL_COVERAGE
+        )
+        assert rr.decision == Decision.REVIEW, (
+            f"{field}: conf=0.45 gave {rr.decision}, expected REVIEW"
+        )
         results.append(rr)
 
     overall = aggregate_overall(results)

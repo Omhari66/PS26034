@@ -34,7 +34,7 @@ class FieldEvidenceIn(BaseModel):
     value: str | None = None
     source_image: str | None = None
     # (x1, y1, x2, y2) in original image pixel coordinates
-    bbox: tuple[int, int, int, int] | None = None
+    bbox: tuple[int, int, int, int] | list[int] | None = None
     ocr_engine: str | None = None
     ocr_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
     secondary_value: str | None = None
@@ -52,7 +52,7 @@ class FieldEvidenceOut(BaseModel):
     state: EvidenceState
     value: str | None = None
     source_image: str | None = None
-    bbox: tuple[int, int, int, int] | None = None
+    bbox: tuple[int, int, int, int] | list[int] | None = None
     ocr_engine: str | None = None
     ocr_confidence: float | None = None
     secondary_value: str | None = None
@@ -126,8 +126,9 @@ class FieldCorrection(BaseModel):
     Structured field-level correction (Gap 9).
     Must be provided for any field flagged as REVIEW before submission is allowed (Gap 10).
     """
+
     field_name: str
-    action: Literal["confirmed", "corrected", "marked_absent"]
+    action: Literal["confirmed", "corrected", "marked_absent", "escalated"]
     ai_value: str | None = None
     corrected_value: str | None = None
     reviewer_id: str
@@ -141,6 +142,7 @@ class AnalyzeResponse(BaseModel):
     Returns draft OCR results and rule engine evaluation plus category sanity check,
     but does NOT persist the final report.
     """
+
     inspection_id: str
     category: str
     rule_version: str
@@ -167,9 +169,9 @@ class SetCategoryResponse(BaseModel):
 class ImageUploadResponse(BaseModel):
     image_id: str
     role: str
-    quality: str   # "high" | "medium" | "low"
+    quality: str  # "high" | "medium" | "low"
     accepted: bool
-    reason: str    # Human-readable quality note
+    reason: str  # Human-readable quality note
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +185,7 @@ class ReviewRequest(BaseModel):
     Creates a ReviewRecord; never edits the original report.
     CONTRACTS.md #7 / AGENTS.md rule 5.
     """
+
     overridden_decision: Decision
     reason: str = Field(..., min_length=10, description="Mandatory explanation (≥10 chars)")
     reviewer_id: str
@@ -190,6 +193,7 @@ class ReviewRequest(BaseModel):
 
 class ReviewRecordOut(BaseModel):
     """One supervisor review / override record."""
+
     id: str
     inspection_id: str
     reviewer_id: str
@@ -201,12 +205,14 @@ class ReviewRecordOut(BaseModel):
 
 class AuditTrailOut(BaseModel):
     """Full audit trail: original report + all review records in order."""
+
     inspection: InspectionReportOut
     reviews: list[ReviewRecordOut]
 
 
 class InspectionListItem(BaseModel):
     """Summary row for the dashboard inspection list."""
+
     inspection_id: str
     inspector_id: str
     category: str | None
@@ -219,5 +225,44 @@ class InspectionListItem(BaseModel):
 
 class InspectionListOut(BaseModel):
     """Paginated inspection list response."""
+
     items: list[InspectionListItem]
     total: int
+
+
+class InspectionImageMetaOut(BaseModel):
+    id: str
+    inspection_id: str
+    role: str
+    quality: str
+    accepted: bool
+    url: str
+    original_width: int | None = None
+    original_height: int | None = None
+
+
+class DecisionQualityFieldTrigger(BaseModel):
+    field_name: str
+    review_count: int
+    percentage: float
+
+
+class DecisionQualityAnalyticsOut(BaseModel):
+    """
+    Phase 9 / Gap 4: Decision Quality Tracking.
+    Tracks review rate, supervisor override rate, decision breakdown, and top review fields.
+    """
+    total_inspections: int
+    review_count: int
+    review_rate_percentage: float
+    weekly_total_inspections: int = 0
+    weekly_review_count: int = 0
+    weekly_review_rate_percentage: float = 0.0
+    overridden_reviews_count: int
+    confirmed_reviews_count: int
+    override_rate_percentage: float
+    confirmation_rate_percentage: float = 0.0
+    decision_counts: dict[str, int]
+    top_review_trigger_fields: list[DecisionQualityFieldTrigger]
+
+

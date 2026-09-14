@@ -71,9 +71,7 @@ def require_supervisor(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
                 "code": "INSUFFICIENT_ROLE",
-                "message": (
-                    f"Role 'supervisor' required. Your role: '{current_user.role}'."
-                ),
+                "message": (f"Role 'supervisor' required. Your role: '{current_user.role}'."),
             },
         )
     return current_user

@@ -17,6 +17,8 @@ uv.lock
 # Node
 node_modules/
 .pnpm-store/
+*.tsbuildinfo
+
 
 # Next.js
 apps/dashboard/.next/

@@ -15,29 +15,69 @@ This suite:
 Uses the shared `client` fixture from conftest.py (SQLite in-memory DB).
 """
 
+import copy
 
 # ---------------------------------------------------------------------------
 # Helpers — build a submitted inspection we can review
 # ---------------------------------------------------------------------------
 
+_FIELD_VALUES = {
+    "mrp": "150.00",
+    "net_quantity": "100 g",
+    "manufacturing_date": "01/2026",
+    "manufacturer_name": '[{"role": "Manufactured by", "entity": "Test Corp"}]',
+    "consumer_care": "care@test.com",
+}
+
 _PASS_EVIDENCE = [
     {
-        "field_name": f,
+        "field_name": "mrp",
         "state": "FOUND",
-        "value": "test-value",
+        "value": "149.00",
         "ocr_confidence": 0.95,
+        "secondary_value": "149.00",
         "source_image": "front.jpg",
-    }
-    for f in ["mrp", "net_quantity", "manufacturing_date", "manufacturer_name", "consumer_care"]
+    },
+    {
+        "field_name": "net_quantity",
+        "state": "FOUND",
+        "value": "500g",
+        "ocr_confidence": 0.95,
+        "secondary_value": "500g",
+        "source_image": "front.jpg",
+    },
+    {
+        "field_name": "manufacturing_date",
+        "state": "FOUND",
+        "value": "10/2023",
+        "ocr_confidence": 0.95,
+        "secondary_value": "10/2023",
+        "source_image": "front.jpg",
+    },
+    {
+        "field_name": "manufacturer_name",
+        "state": "FOUND",
+        "value": '[{"role": "manufactured by", "name": "Test Co"}]',
+        "ocr_confidence": 0.95,
+        "secondary_value": '[{"role": "manufactured by", "name": "Test Co"}]',
+        "source_image": "front.jpg",
+    },
+    {
+        "field_name": "consumer_care",
+        "state": "FOUND",
+        "value": "test@test.com",
+        "ocr_confidence": 0.95,
+        "secondary_value": "test@test.com",
+        "source_image": "front.jpg",
+    },
 ]
 
-_REVIEW_EVIDENCE = [
-    {
-        "field_name": "mrp",
-        "state": "CONFLICTING",
-        "candidates": ["149.00", "199.00"],
-    }
-]
+_REVIEW_EVIDENCE = copy.deepcopy(_PASS_EVIDENCE)
+_REVIEW_EVIDENCE[0] = {
+    "field_name": "mrp",
+    "state": "CONFLICTING",
+    "candidates": ["149.00", "199.00"],
+}
 
 
 def _create_submitted(client, category: str = "packaged_food", evidence=None) -> str:
@@ -52,13 +92,26 @@ def _create_submitted(client, category: str = "packaged_food", evidence=None) ->
     r = client.post(f"/api/v1/inspections/{iid}/category", json={"category": category})
     assert r.status_code == 200
 
+    payload = {
+        "coverage": {"front": True, "back": True, "close_up": False},
+        "field_evidences": evidence or _PASS_EVIDENCE,
+    }
+    if evidence == _REVIEW_EVIDENCE:
+        payload["corrections"] = [
+            {
+                "field_name": "mrp",
+                "action": "escalated",
+                "reviewer_id": "test-inspector",
+                "acknowledged": True,
+            }
+        ]
+
     r = client.post(
         f"/api/v1/inspections/{iid}/submit",
-        json={
-            "coverage": {"front": True, "back": True, "close_up": False},
-            "field_evidences": evidence or _PASS_EVIDENCE,
-        },
+        json=payload,
     )
+    if r.status_code != 200:
+        print("SUBMIT FAILED:", r.json())
     assert r.status_code == 200
     return iid
 
@@ -144,8 +197,13 @@ class TestCreateReview:
         )
         body = res.json()
         for key in (
-            "id", "inspection_id", "reviewer_id",
-            "overridden_decision", "reason", "original_decision", "created_at",
+            "id",
+            "inspection_id",
+            "reviewer_id",
+            "overridden_decision",
+            "reason",
+            "original_decision",
+            "created_at",
         ):
             assert key in body, f"missing key: {key}"
 

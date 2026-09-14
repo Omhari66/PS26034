@@ -31,7 +31,9 @@ import { QualityBadge } from '../components/QualityBadge';
 import { Colors } from '../constants/colors';
 import { uploadImage } from '../lib/api';
 import type { CapturedImage, ImageRole } from '../lib/types';
-import { activeSession } from './index';
+import { activeSession, setActiveSession } from './index';
+
+import { calculatePHash, calculateSimilarity, isDuplicate } from '../lib/phash';
 
 const ROLES: { role: ImageRole; label: string; hint: string; icon: string }[] = [
   { role: 'front', label: 'Front', hint: 'Full front of the package', icon: 'cube-outline' },
@@ -41,10 +43,29 @@ const ROLES: { role: ImageRole; label: string; hint: string; icon: string }[] = 
 
 export default function CaptureScreen() {
   const router = useRouter();
-  const [images, setImages] = useState<CapturedImage[]>([]);
+  const [images, setImages] = useState<CapturedImage[]>(activeSession?.images || []);
   const [uploading, setUploading] = useState<ImageRole | null>(null);
 
-  const capturedRoles = new Set(images.map((i) => i.role));
+  // Sync state with activeSession on mount or navigation
+  React.useEffect(() => {
+    if (activeSession?.images) {
+      setImages(activeSession.images);
+    }
+  }, []);
+
+  const updateSessionImages = useCallback((newImages: CapturedImage[]) => {
+    setImages(newImages);
+    if (activeSession) {
+      setActiveSession({
+        ...activeSession,
+        images: newImages,
+      });
+    }
+  }, []);
+
+  const capturedRoles = new Set(
+    images.filter((i) => i.uploadStatus !== 'failed').map((i) => i.role),
+  );
   const canProceed = capturedRoles.has('front') && capturedRoles.has('back');
 
   const handleCapture = useCallback(
@@ -79,6 +100,34 @@ export default function CaptureScreen() {
       if (result.canceled || !result.assets?.[0]) return;
 
       const asset = result.assets[0];
+
+      // ─── Duplicate Image Protection (pHash check) ─────────────────────────
+      let phash: string | undefined;
+      try {
+        phash = await calculatePHash(asset.uri);
+      } catch (err) {
+        console.warn('pHash calculation failed:', err);
+      }
+
+      if (phash) {
+        // Compare against images already captured in this session (excluding current role being retaken)
+        const existingImages = (activeSession?.images || images).filter(
+          (img) => img.role !== role && img.phash,
+        );
+
+        const duplicate = existingImages.find((img) => isDuplicate(phash!, img.phash!));
+        if (duplicate) {
+          const similarity = calculateSimilarity(phash, duplicate.phash!).toFixed(1);
+          const roleName = duplicate.role.replace('_', ' ').toUpperCase();
+          Alert.alert(
+            'Duplicate Image Blocked',
+            `This photo is ${similarity}% similar to the image already uploaded as "${roleName}".\n\nPlease retake a distinct photo of the package panel.`,
+            [{ text: 'Retake Photo' }],
+          );
+          return; // Block upload and role assignment
+        }
+      }
+
       setUploading(role);
 
       try {
@@ -92,21 +141,13 @@ export default function CaptureScreen() {
         const captured: CapturedImage = {
           role,
           localUri: asset.uri,
+          phash,
+          uploadStatus: 'success',
           uploadResponse: uploadRes,
         };
 
-        // Replace existing image for this role (re-capture)
-        setImages((prev) => [
-          ...prev.filter((i) => i.role !== role),
-          captured,
-        ]);
-
-        if (activeSession) {
-          activeSession.images = [
-            ...activeSession.images.filter((i) => i.role !== role),
-            captured,
-          ];
-        }
+        const newImages = [...images.filter((i) => i.role !== role), captured];
+        updateSessionImages(newImages);
 
         if (!uploadRes.accepted) {
           Alert.alert(
@@ -115,12 +156,68 @@ export default function CaptureScreen() {
           );
         }
       } catch (err) {
-        Alert.alert('Upload Failed', (err as Error).message);
+        const errMsg = (err as Error).message;
+        const failedCaptured: CapturedImage = {
+          role,
+          localUri: asset.uri,
+          phash,
+          uploadStatus: 'failed',
+          uploadError: errMsg,
+        };
+        const newImages = [...images.filter((i) => i.role !== role), failedCaptured];
+        updateSessionImages(newImages);
+
+        Alert.alert(
+          'Upload Failed (Saved Locally)',
+          `The photo was captured but could not be sent to the server:\n\n${errMsg}\n\nPhoto saved locally. Tap "Retry Upload" when online.`,
+        );
       } finally {
         setUploading(null);
       }
     },
-    [],
+    [images, updateSessionImages],
+  );
+
+  const handleRetryUpload = useCallback(
+    async (role: ImageRole) => {
+      const existing = images.find((i) => i.role === role);
+      if (!existing || !activeSession) return;
+
+      setUploading(role);
+
+      try {
+        const uploadRes = await uploadImage(
+          activeSession.inspectionId,
+          role,
+          existing.localUri,
+          'image/jpeg',
+        );
+
+        const updated: CapturedImage = {
+          ...existing,
+          uploadStatus: 'success',
+          uploadError: undefined,
+          uploadResponse: uploadRes,
+        };
+
+        const newImages = [...images.filter((i) => i.role !== role), updated];
+        updateSessionImages(newImages);
+      } catch (err) {
+        const errMsg = (err as Error).message;
+        const updated: CapturedImage = {
+          ...existing,
+          uploadStatus: 'failed',
+          uploadError: errMsg,
+        };
+        const newImages = [...images.filter((i) => i.role !== role), updated];
+        updateSessionImages(newImages);
+
+        Alert.alert('Retry Failed', `Upload attempt failed again:\n\n${errMsg}`);
+      } finally {
+        setUploading(null);
+      }
+    },
+    [images, updateSessionImages],
   );
 
   return (
@@ -149,6 +246,11 @@ export default function CaptureScreen() {
                 {captured?.uploadResponse && (
                   <QualityBadge quality={captured.uploadResponse.quality} />
                 )}
+                {captured?.uploadStatus === 'failed' && (
+                  <View style={styles.failedBadge}>
+                    <Text style={styles.failedBadgeText}>⚠ Offline / Failed</Text>
+                  </View>
+                )}
               </View>
 
               {/* Thumbnail */}
@@ -160,33 +262,65 @@ export default function CaptureScreen() {
                 />
               )}
 
-              {/* Capture button */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.captureBtn,
-                  captured ? styles.captureBtnRetake : styles.captureBtnPrimary,
-                  pressed && styles.captureBtnPressed,
-                ]}
-                onPress={() => handleCapture(role)}
-                disabled={isUploading}
-                accessibilityRole="button"
-                accessibilityLabel={`Capture ${label} image`}
-              >
-                {isUploading ? (
-                  <ActivityIndicator color={Colors.white} size="small" />
-                ) : (
-                  <>
-                    <Ionicons
-                      name={captured ? 'refresh' : 'camera'}
-                      size={16}
-                      color={Colors.white}
-                    />
-                    <Text style={styles.captureBtnText}>
-                      {captured ? 'Retake' : `Capture ${label}`}
-                    </Text>
-                  </>
+              {/* Error message if failed */}
+              {captured?.uploadStatus === 'failed' && (
+                <Text style={styles.errorText}>
+                  ⚠ Sync failed: {captured.uploadError ?? 'Network error'}
+                </Text>
+              )}
+
+              {/* Button group */}
+              <View style={styles.btnRow}>
+                {captured?.uploadStatus === 'failed' && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.retryBtn,
+                      pressed && styles.captureBtnPressed,
+                    ]}
+                    onPress={() => handleRetryUpload(role)}
+                    disabled={isUploading}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Retry upload for ${label}`}
+                  >
+                    {isUploading ? (
+                      <ActivityIndicator color={Colors.white} size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="cloud-upload" size={16} color={Colors.white} />
+                        <Text style={styles.retryBtnText}>Retry Upload</Text>
+                      </>
+                    )}
+                  </Pressable>
                 )}
-              </Pressable>
+
+                {/* Capture/Retake button */}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.captureBtn,
+                    captured?.uploadStatus === 'failed' ? styles.captureBtnSecondary : captured ? styles.captureBtnRetake : styles.captureBtnPrimary,
+                    pressed && styles.captureBtnPressed,
+                  ]}
+                  onPress={() => handleCapture(role)}
+                  disabled={isUploading}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Capture ${label} image`}
+                >
+                  {isUploading && captured?.uploadStatus !== 'failed' ? (
+                    <ActivityIndicator color={Colors.white} size="small" />
+                  ) : (
+                    <>
+                      <Ionicons
+                        name={captured ? 'refresh' : 'camera'}
+                        size={16}
+                        color={captured?.uploadStatus === 'failed' ? Colors.textPrimary : Colors.white}
+                      />
+                      <Text style={captured?.uploadStatus === 'failed' ? styles.captureBtnTextSecondary : styles.captureBtnText}>
+                        {captured ? 'Retake Photo' : `Capture ${label}`}
+                      </Text>
+                    </>
+                  )}
+                </Pressable>
+              </View>
             </View>
           );
         })}
@@ -230,8 +364,24 @@ const styles = StyleSheet.create({
   roleInfo: { flex: 1 },
   roleLabel: { fontSize: 16, fontWeight: '600', color: Colors.textPrimary },
   roleHint: { fontSize: 12, color: Colors.textSecondary },
+  failedBadge: { backgroundColor: Colors.fail + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+  failedBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.fail },
   thumbnail: { width: '100%', height: 160, borderRadius: 10, backgroundColor: Colors.surfaceElevated },
+  errorText: { fontSize: 12, color: Colors.fail, marginTop: -4 },
+  btnRow: { flexDirection: 'row', gap: 8 },
+  retryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.fail,
+  },
+  retryBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
   captureBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -241,8 +391,10 @@ const styles = StyleSheet.create({
   },
   captureBtnPrimary: { backgroundColor: Colors.primary },
   captureBtnRetake: { backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
+  captureBtnSecondary: { backgroundColor: Colors.surfaceElevated, borderWidth: 1, borderColor: Colors.border },
   captureBtnPressed: { opacity: 0.75 },
   captureBtnText: { fontSize: 15, fontWeight: '600', color: Colors.white },
+  captureBtnTextSecondary: { fontSize: 14, fontWeight: '600', color: Colors.textPrimary },
   nextBtn: {
     backgroundColor: Colors.primary,
     padding: 18,

@@ -19,7 +19,7 @@ import os
 import sys
 
 # Patch sys.path so packages.shared_schema is importable from the test process.
-_repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+_repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _backend_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 for _p in [_repo_root, _backend_root]:
     if _p not in sys.path:

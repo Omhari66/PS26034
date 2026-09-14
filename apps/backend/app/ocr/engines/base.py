@@ -28,7 +28,7 @@ class OCRResult:
     text: str
     bbox: tuple[int, int, int, int]  # (x1, y1, x2, y2) — top-left, bottom-right
     confidence: float  # [0.0, 1.0]
-    engine_name: str   # "easyocr" | "paddleocr" | …
+    engine_name: str  # "easyocr" | "paddleocr" | …
 
 
 @runtime_checkable
