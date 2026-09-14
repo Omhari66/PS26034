@@ -56,9 +56,17 @@ export default function SubmitScreen() {
   const { images, category } = session;
   const acceptedCount = images.filter((i) => i.uploadResponse?.accepted).length;
   const rejectedCount = images.filter((i) => i.uploadResponse && !i.uploadResponse.accepted).length;
+  const failedCount = images.filter((i) => i.uploadStatus === 'failed' || !i.uploadResponse).length;
 
   async function handleSubmit() {
     if (!session) return;
+    if (failedCount > 0) {
+      Alert.alert(
+        'Uploads Pending',
+        'Some captured images failed to upload. Please return to the Capture screen and tap "Retry Upload".',
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const draft = await analyzeInspection(session.inspectionId);
@@ -107,6 +115,12 @@ export default function SubmitScreen() {
                 <Text style={styles.statLabel}>Low quality</Text>
               </View>
             )}
+            {failedCount > 0 && (
+              <View style={styles.stat}>
+                <Text style={[styles.statNumber, { color: Colors.fail }]}>{failedCount}</Text>
+                <Text style={styles.statLabel}>Failed</Text>
+              </View>
+            )}
             <View style={styles.stat}>
               <Text style={styles.statNumber}>{images.length}</Text>
               <Text style={styles.statLabel}>Total</Text>
@@ -125,6 +139,9 @@ export default function SubmitScreen() {
                 {img.uploadResponse && (
                   <QualityBadge quality={img.uploadResponse.quality} />
                 )}
+                {img.uploadStatus === 'failed' && (
+                  <Text style={styles.thumbReject}>⚠ Upload failed</Text>
+                )}
                 {img.uploadResponse && !img.uploadResponse.accepted && (
                   <Text style={styles.thumbReject}>⚠ Low quality — OCR may be limited</Text>
                 )}
@@ -133,8 +150,17 @@ export default function SubmitScreen() {
           </View>
         </ScrollView>
 
+        {/* Warning if failed images */}
+        {failedCount > 0 && (
+          <View style={styles.warningBoxFailed}>
+            <Text style={styles.warningTextFailed}>
+              ⚠ {failedCount} image(s) failed to upload. Return to Capture screen and tap "Retry Upload" before analyzing.
+            </Text>
+          </View>
+        )}
+
         {/* Warning if rejected images */}
-        {rejectedCount > 0 && (
+        {rejectedCount > 0 && failedCount === 0 && (
           <View style={styles.warningBox}>
             <Text style={styles.warningText}>
               ⚠ {rejectedCount} image(s) are low quality and may not be usable for OCR.
@@ -147,11 +173,11 @@ export default function SubmitScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.submitBtn,
-            submitting && styles.submitBtnDisabled,
-            pressed && !submitting && styles.submitBtnPressed,
+            (submitting || failedCount > 0) && styles.submitBtnDisabled,
+            pressed && !submitting && failedCount === 0 && styles.submitBtnPressed,
           ]}
           onPress={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || failedCount > 0}
           accessibilityRole="button"
           accessibilityLabel="Submit inspection for compliance check"
         >
@@ -217,6 +243,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.qualityMedium + '66',
   },
   warningText: { fontSize: 13, color: Colors.qualityMedium, lineHeight: 18 },
+  warningBoxFailed: {
+    backgroundColor: Colors.fail + '22',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.fail + '66',
+  },
+  warningTextFailed: { fontSize: 13, color: Colors.fail, lineHeight: 18 },
   submitBtn: {
     backgroundColor: Colors.primary,
     padding: 18,

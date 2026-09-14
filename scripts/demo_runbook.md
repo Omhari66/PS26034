@@ -8,6 +8,13 @@
 Run these once (5–10 minutes ahead):
 
 ```powershell
+# 0. CHECK: Is Tesseract installed? (secondary OCR engine)
+tesseract --version
+# If the above fails, install it now (takes ~2 min) — optional but recommended:
+#   winget install UB-Mannheim.TesseractOCR -e
+# Without Tesseract: live mobile OCR will work but ALL fields will be capped
+# at REVIEW (single_engine_only=True). Seeded demo cases are unaffected.
+
 # 1. Start backend (terminal A — keep open)
 cd apps/backend
 uv run uvicorn main:app --host 0.0.0.0 --port 8000
@@ -60,7 +67,8 @@ Open the Expo app on a phone / emulator.
 3. Confirm the **category** (`packaged_food`) — this is inspector-verified, never auto-assumed.
 4. Tap **Submit** → OCR pipeline runs, rule engine fires.
 
-> "In under 10 seconds, every mandatory field is cross-checked by two OCR engines."
+> "In under 10 seconds, every mandatory field is processed by the OCR pipeline
+> and cross-checked against a secondary engine when available."
 
 ---
 
@@ -111,7 +119,8 @@ Show:
 ### Segment 6 — Scope honesty (15 sec)
 
 > "What we are NOT claiming:
-> - No offline mode — requires connectivity.
+> - The mobile app retains a failed upload locally for retry, but final
+>   submission to the backend requires network connectivity.
 > - Not a legal certificate — a **preliminary** AI-assisted assessment.
 > - REVIEW outcome is not an error. It's the system correctly saying
 >   'a human needs to look at this.'
@@ -167,10 +176,12 @@ The following are explicitly **out of scope** — do NOT demo or imply these wor
 
 ## Known limitations to mention proactively
 
-- PaddleOCR secondary engine may be unavailable on some setups →
-  affected fields get `NOT_VERIFIABLE` (correct behaviour per CONTRACTS.md).
+- Tesseract secondary engine requires a separate install (`winget install UB-Mannheim.TesseractOCR -e`).
+  If absent, live mobile OCR fields are marked `single_engine_only=True` and capped at REVIEW —
+  this is correct behaviour per CONTRACTS.md §2. Seeded PASS/FAIL/REVIEW cases in the dashboard
+  are unaffected by Tesseract availability.
 - Demo DB is SQLite; production would be PostgreSQL.
-- Auth is demo-quality user store; production needs a proper users table.
+- Auth is demo-quality in-memory user store; production needs a proper DB-backed users table.
 
 ---
 
