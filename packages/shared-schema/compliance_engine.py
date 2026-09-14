@@ -172,8 +172,8 @@ def validate_manufacturer(
     if not pairs:
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Could not parse manufacturer roles from {evidence.value}", evidence)
         
-    has_mfr_or_packer = any("manufactured by" in p["role"] or "mfd" in p["role"] or "packed by" in p["role"] for p in pairs)
-    has_marketed = any("marketed by" in p["role"] for p in pairs)
+    has_mfr_or_packer = any("manufactured by" in p.get("role", "").lower() or "mfd" in p.get("role", "").lower() or "packed by" in p.get("role", "").lower() for p in pairs)
+    has_marketed = any("marketed by" in p.get("role", "").lower() for p in pairs)
     
     if not has_mfr_or_packer and has_marketed:
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Found 'Marketed by' but missing required 'Manufactured by' or 'Packed by' legal entity", evidence)
