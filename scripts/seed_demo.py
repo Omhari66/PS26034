@@ -27,7 +27,7 @@ import argparse
 import json
 import sys
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 
 # -- Config -------------------------------------------------------------------
 
@@ -249,7 +249,7 @@ def seed(base: str) -> None:
     api = f"{base}/api/v1"
     sep = "=" * 60
     print(f"\n{sep}")
-    print(f"PS 26034 demo seeder -- {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"PS 26034 demo seeder -- {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Target: {base}")
     print(sep)
 
@@ -349,6 +349,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     try:
         seed(args.url)
-    except Exception as e:
+    except Exception as e: # noqa: BLE001
         print(f"\nFAIL Seeding failed: {e}", file=sys.stderr)
         sys.exit(1)

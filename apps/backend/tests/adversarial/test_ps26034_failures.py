@@ -21,7 +21,6 @@ Running
   cd apps/backend
   uv run pytest tests/adversarial/ -v
 """
-
 from __future__ import annotations
 
 import sys
@@ -44,7 +43,6 @@ from packages.shared_schema import (  # noqa: E402
 # Helpers
 # ---------------------------------------------------------------------------
 
-
 def _ev(field, state, value=None, confidence=None):
     return FieldEvidence(
         field_name=field,
@@ -55,7 +53,7 @@ def _ev(field, state, value=None, confidence=None):
 
 
 FULL_COVERAGE = {"front": True, "back": True, "close_up": True}
-FRONT_ONLY = {"front": True, "back": False, "close_up": False}
+FRONT_ONLY    = {"front": True, "back": False, "close_up": False}
 
 
 # ---------------------------------------------------------------------------
@@ -65,7 +63,9 @@ FRONT_ONLY = {"front": True, "back": False, "close_up": False}
 def test_01_bare_price_not_found_full_coverage_gives_fail():
     """When MRP is genuinely not found and coverage is complete, result must be FAIL."""
     ev = _ev("mrp", EvidenceState.NOT_FOUND)
-    result = evaluate_field(ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    result = evaluate_field(
+        ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.FAIL, (
         f"NOT_FOUND + full coverage gave {result.decision}. Expected FAIL."
     )
@@ -105,7 +105,9 @@ def test_02_offer_price_not_selected_as_mrp():
 def test_03_not_found_front_only_gives_review_not_fail():
     """Consumer Care not found + only front captured → REVIEW, not FAIL."""
     ev = _ev("consumer_care", EvidenceState.NOT_FOUND)
-    result = evaluate_field(ev, "LM-CC-001", "v1.0", required=True, coverage=FRONT_ONLY)
+    result = evaluate_field(
+        ev, "LM-CC-001", "v1.0", required=True, coverage=FRONT_ONLY
+    )
     assert result.decision == Decision.REVIEW, (
         f"NOT_FOUND + front-only coverage gave {result.decision}. "
         "Expected REVIEW — back panel not inspected."
@@ -117,8 +119,12 @@ def test_03_not_found_front_only_gives_review_not_fail():
 # ---------------------------------------------------------------------------
 def test_04_low_confidence_gives_review():
     """FOUND + confidence 0.42 must give REVIEW, not PASS."""
-    ev = _ev("consumer_care", EvidenceState.FOUND, value="1800-123-4567", confidence=0.42)
-    result = evaluate_field(ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    ev = _ev(
+        "consumer_care", EvidenceState.FOUND, value="1800-123-4567", confidence=0.42
+    )
+    result = evaluate_field(
+        ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.REVIEW, (
         f"FOUND + conf=0.42 gave {result.decision}. Expected REVIEW."
     )
@@ -135,7 +141,9 @@ def test_05_conflicting_readings_gives_review():
         ocr_confidence=0.91,
         candidates=["199.00", "299.00"],
     )
-    result = evaluate_field(ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    result = evaluate_field(
+        ev, "LM-MRP-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.REVIEW, (
         f"CONFLICTING gave {result.decision}. Expected REVIEW."
     )
@@ -157,7 +165,10 @@ def test_06_mfg_date_distinct_from_best_before():
     from app.ocr.field_extractor import extract_field
 
     mfd = OCRResult(
-        text="Manufactured: 08/2026", bbox=(10, 10, 200, 40), confidence=0.93, engine_name="test"
+        text="Manufactured: 08/2026",
+        bbox=(10, 10, 200, 40),
+        confidence=0.93,
+        engine_name="test",
     )
     bbd = OCRResult(
         text="Best Before: 12 months from mfg",
@@ -171,7 +182,9 @@ def test_06_mfg_date_distinct_from_best_before():
     assert "Best Before" not in result.source_result.text, (
         "Manufacturing date result came from the 'Best Before' block."
     )
-    assert "2026" in result.raw_value, f"Expected MFD 08/2026, got '{result.raw_value}'"
+    assert "2026" in result.raw_value, (
+        f"Expected MFD 08/2026, got '{result.raw_value}'"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -205,8 +218,12 @@ def test_07_consumer_care_not_confused_with_sales_number():
 
     result = extract_field("consumer_care", [care_block, sales_block])
     assert result is not None
-    assert "9876543210" not in result.raw_value, "Sales phone number was returned as Consumer Care."
-    assert "1800" in result.raw_value, f"Expected toll-free number, got '{result.raw_value}'"
+    assert "9876543210" not in result.raw_value, (
+        "Sales phone number was returned as Consumer Care."
+    )
+    assert "1800" in result.raw_value, (
+        f"Expected toll-free number, got '{result.raw_value}'"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +246,9 @@ def test_08_single_engine_gives_review_not_pass():
     primary = MagicMock()
     primary.name = "mock"
     primary.recognize.return_value = [
-        MagicMock(text="MRP Rs.199", bbox=(10, 10, 200, 40), confidence=0.91, engine_name="mock")
+        MagicMock(
+            text="MRP Rs.199", bbox=(10, 10, 200, 40), confidence=0.91, engine_name="mock"
+        )
     ]
 
     # Directly passing None works correctly at the pipeline level:
@@ -255,7 +274,9 @@ def test_09_not_verifiable_gives_review():
     detection (Phase 3) is the missing piece.
     """
     ev = _ev("consumer_care", EvidenceState.NOT_VERIFIABLE)
-    result = evaluate_field(ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE)
+    result = evaluate_field(
+        ev, "LM-CC-001", "v1.0", required=True, coverage=FULL_COVERAGE
+    )
     assert result.decision == Decision.REVIEW, (
         f"NOT_VERIFIABLE gave {result.decision}. Expected REVIEW."
     )
@@ -276,7 +297,9 @@ def test_10_all_low_confidence_overall_review():
     results = []
     for field, rule_id in fields_rules.items():
         ev = _ev(field, EvidenceState.FOUND, value="x", confidence=0.45)
-        rr = evaluate_field(ev, rule_id, "v1.0", required=True, coverage=FULL_COVERAGE)
+        rr = evaluate_field(
+            ev, rule_id, "v1.0", required=True, coverage=FULL_COVERAGE
+        )
         assert rr.decision == Decision.REVIEW, (
             f"{field}: conf=0.45 gave {rr.decision}, expected REVIEW"
         )
