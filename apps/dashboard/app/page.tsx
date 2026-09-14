@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   fetchInspections,
@@ -11,7 +11,7 @@ import {
 } from "../lib/api";
 import { InspectionTable } from "../components/InspectionTable";
 
-export default function HomePage() {
+function HomePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const decision = searchParams.get("decision") ?? undefined;
@@ -106,3 +106,12 @@ export default function HomePage() {
     </div>
   );
 }
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div>Loading page...</div>}>
+      <HomePageContent />
+    </Suspense>
+  );
+}
+

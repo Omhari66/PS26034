@@ -92,20 +92,51 @@ export default function DecisionQualityAnalyticsPage() {
     );
   }
 
+  if (analytics.total_inspections === 0) {
+    return (
+      <div className="space-y-6 max-w-xl mx-auto py-16 text-center">
+        <div className="p-8 bg-gradient-to-b from-[#0c0d16] to-[#07070b] border border-zinc-800 rounded-3xl text-zinc-300 shadow-2xl space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto text-purple-400">
+            <BarChart3 className="w-8 h-8" />
+          </div>
+          <div>
+            <h3 className="text-lg font-black text-white">No Inspection Records Found</h3>
+            <p className="text-xs text-zinc-400 mt-1 max-w-md mx-auto font-medium">
+              There are currently no submitted inspections or decision quality records in the system database. Perform audits to generate real-time analytics telemetry.
+            </p>
+          </div>
+          <button
+            onClick={fetchAnalytics}
+            className="flex items-center justify-center gap-2 px-6 py-3 mx-auto bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-2xl text-xs transition-all shadow-lg active:scale-95"
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Refresh Analytics Data</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const {
     total_inspections,
     review_count,
     review_rate_percentage,
+    weekly_review_rate_percentage,
     overridden_reviews_count,
     confirmed_reviews_count,
     override_rate_percentage,
+    confirmation_rate_percentage,
     decision_counts,
     top_review_trigger_fields,
   } = analytics;
 
-  const confirmationRate = review_count > 0 ? (100 - override_rate_percentage).toFixed(2) : "100.00";
+  const confirmationRate = confirmation_rate_percentage !== undefined
+    ? confirmation_rate_percentage.toFixed(2)
+    : (review_count > 0 ? (100 - override_rate_percentage).toFixed(2) : "100.00");
+  const weeklyRate = weekly_review_rate_percentage !== undefined ? weekly_review_rate_percentage : review_rate_percentage;
   const topRiskField = top_review_trigger_fields[0]?.field_name.replace(/_/g, " ").toUpperCase() || "N/A";
   const topRiskCount = top_review_trigger_fields[0]?.review_count || 0;
+
 
   const chartFieldData = top_review_trigger_fields.map((f) => ({
     name: f.field_name.replace(/_/g, " ").toUpperCase(),
@@ -232,23 +263,24 @@ export default function DecisionQualityAnalyticsPage() {
           className="bg-gradient-to-br from-[#0c0d16] via-[#07070b] to-[#1a1408] border border-amber-500/30 rounded-3xl p-6 space-y-4 relative overflow-hidden shadow-[0_0_30px_rgba(245,158,11,0.1)] group"
         >
           <div className="flex items-center justify-between text-xs font-extrabold text-zinc-300">
-            <span className="uppercase tracking-wider font-mono">REVIEW Route %</span>
+            <span className="uppercase tracking-wider font-mono">REVIEW Route % (This Week)</span>
             <div className="w-9 h-9 rounded-2xl bg-amber-500/15 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-inner group-hover:scale-110 transition-transform">
               <AlertTriangle className="w-4.5 h-4.5" />
             </div>
           </div>
           <div>
             <div className="text-3xl sm:text-4xl font-black text-amber-400 tracking-tight font-mono">
-              {review_rate_percentage}%
+              {weeklyRate}%
             </div>
             <p className="text-xs text-zinc-400 mt-2 font-medium">
-              <strong className="text-white font-bold">{review_count}</strong> of {total_inspections} inspections routed to REVIEW
+              <strong className="text-white font-bold">{review_count}</strong> of {total_inspections} total inspections routed to REVIEW
             </p>
           </div>
           <div className="w-full bg-zinc-900 rounded-full h-1.5 overflow-hidden border border-zinc-800">
-            <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full shadow-[0_0_10px_#f59e0b]" style={{ width: `${review_rate_percentage}%` }} />
+            <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full shadow-[0_0_10px_#f59e0b]" style={{ width: `${weeklyRate}%` }} />
           </div>
         </motion.div>
+
 
         {/* KPI 3: Supervisor Confirmation Rate */}
         <motion.div
