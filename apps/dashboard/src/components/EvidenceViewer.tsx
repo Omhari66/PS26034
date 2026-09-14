@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 export interface BoundingBoxPercent {
   left: number;
@@ -110,6 +110,12 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
   );
   const imgRef = useRef<HTMLImageElement>(null);
 
+  useEffect(() => {
+    if (originalWidth && originalHeight && originalWidth > 0 && originalHeight > 0) {
+      setNaturalDim({ w: originalWidth, h: originalHeight });
+    }
+  }, [originalWidth, originalHeight, imageUrl]);
+
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     if (img.naturalWidth > 0 && img.naturalHeight > 0) {
@@ -125,7 +131,7 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
     : null;
 
   // Border & background styling based on decision status
-  let overlayStyleClass = "border-2 border-red-500 bg-red-500/20 text-red-200";
+  let overlayStyleClass = "border-2 border-red-500 bg-red-500/20 text-red-200 shadow-[0_0_15px_rgba(239,68,68,0.3)]";
   let badgeBgClass = "bg-red-600 text-white";
 
   if (decision === "PASS") {
@@ -159,6 +165,12 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
           }}
           className={`absolute rounded-md transition-all duration-150 pointer-events-none z-20 ${overlayStyleClass}`}
         >
+          {/* Corner markers */}
+          <span className="absolute -top-1 -left-1 w-2 h-2 border-t-2 border-l-2 border-white rounded-tl-sm" />
+          <span className="absolute -top-1 -right-1 w-2 h-2 border-t-2 border-r-2 border-white rounded-tr-sm" />
+          <span className="absolute -bottom-1 -left-1 w-2 h-2 border-b-2 border-l-2 border-white rounded-bl-sm" />
+          <span className="absolute -bottom-1 -right-1 w-2 h-2 border-b-2 border-r-2 border-white rounded-br-sm" />
+
           {/* Label Badge on overlay */}
           {fieldName && (
             <div className="absolute -top-6 left-0 z-30 pointer-events-auto">
@@ -177,3 +189,4 @@ export const EvidenceViewer: React.FC<EvidenceViewerProps> = ({
     </div>
   );
 };
+

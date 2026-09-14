@@ -297,13 +297,11 @@ export const BoundingBoxViewer: React.FC<Props> = ({
 
               {/* Bounding Box Overlays */}
               {naturalDim &&
-                evidencesWithBbox.map(({ fr, parsedBbox }) => {
-                  const [x1, y1, x2, y2] = parsedBbox;
+                evidencesWithBbox.map(({ fr }) => {
+                  const percentBbox = calculatePercentBbox(fr.evidence?.bbox, naturalDim.w, naturalDim.h);
+                  if (!percentBbox) return null;
 
-                  const left = (x1 / naturalDim.w) * 100;
-                  const top = (y1 / naturalDim.h) * 100;
-                  const width = Math.max(3, ((x2 - x1) / naturalDim.w) * 100);
-                  const height = Math.max(3, ((y2 - y1) / naturalDim.h) * 100);
+                  const { left, top, width, height } = percentBbox;
 
                   const isFocused = activeField === fr.field_name;
                   const isHovered = hoveredField === fr.field_name;
