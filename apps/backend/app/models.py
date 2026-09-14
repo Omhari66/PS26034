@@ -88,10 +88,10 @@ class FieldResult(Base):
     id = Column(String, primary_key=True, default=_new_uuid)
     inspection_id = Column(String, ForeignKey("inspections.id"), nullable=False)
 
-    rule_id = Column(String, nullable=False)       # e.g. "LM-MRP-001"
+    rule_id = Column(String, nullable=False)  # e.g. "LM-MRP-001"
     rule_version = Column(String, nullable=False)  # e.g. "v1.0"
-    field_name = Column(String, nullable=False)    # e.g. "mrp"
-    decision = Column(String, nullable=False)      # Decision enum value
+    field_name = Column(String, nullable=False)  # e.g. "mrp"
+    decision = Column(String, nullable=False)  # Decision enum value
     reason = Column(String, nullable=False)
 
     # Full FieldEvidence serialized as JSON for the evidence viewer
@@ -126,7 +126,7 @@ class InspectionImage(Base):
     role = Column(String, nullable=False)
 
     # CONTRACTS.md #1 output: quality + accepted gate
-    quality = Column(String, nullable=False)    # "high" | "medium" | "low"
+    quality = Column(String, nullable=False)  # "high" | "medium" | "low"
     accepted = Column(Boolean, nullable=False)  # only accepted images go to OCR
 
     # Absolute path to the stored image file (local disk for dev/demo)
@@ -137,7 +137,7 @@ class InspectionImage(Base):
     original_height = Column(Integer, nullable=True)
 
     # Quality scorer details (stored for Phase 5 threshold calibration)
-    sharpness = Column(String, nullable=True)    # stored as string, avoid Float precision
+    sharpness = Column(String, nullable=True)  # stored as string, avoid Float precision
     brightness = Column(String, nullable=True)
     quality_reason = Column(String, nullable=True)
 

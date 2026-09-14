@@ -36,9 +36,20 @@ _MRP_PATTERNS = [
 # Context keywords that DISQUALIFY a price candidate from being MRP.
 # If any of these appear in the ±3 block context window, Pattern 2 is rejected.
 _MRP_NEGATIVE_CONTEXT = {
-    "offer", "sale", "discount", "save", "savings", "off",
-    "special", "promo", "promotional", "deal", "cashback",
-    "price after discount", "net price", "selling price",
+    "offer",
+    "sale",
+    "discount",
+    "save",
+    "savings",
+    "off",
+    "special",
+    "promo",
+    "promotional",
+    "deal",
+    "cashback",
+    "price after discount",
+    "net price",
+    "selling price",
 }
 
 # Score added to a candidate when MRP-positive keywords appear nearby.
@@ -97,6 +108,7 @@ _FIELD_PATTERNS: dict[str, list[str]] = {
 # Result type
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True)
 class ExtractionResult:
     """
@@ -116,6 +128,7 @@ class ExtractionResult:
 # Normalizers — clean raw OCR text for comparison and storage
 # ---------------------------------------------------------------------------
 
+
 def _normalize_mrp(raw: str) -> str:
     """Strip currency symbols, commas; keep decimal dot. '1,49.00' → '149.00'."""
     cleaned = re.sub(r"[₹$\s]", "", raw)
@@ -129,9 +142,14 @@ def _normalize_mrp(raw: str) -> str:
 def _normalize_net_qty(raw: str, unit_raw: str | None = None) -> str:
     """'  500 gm  ' → '500g', '1.5 litre' → '1.5l'."""
     _UNIT_MAP = {
-        "gm": "g", "gms": "g", "gram": "g", "grams": "g",
-        "litre": "l", "liter": "l",
-        "fl oz": "fl oz", "fl. oz": "fl oz",
+        "gm": "g",
+        "gms": "g",
+        "gram": "g",
+        "grams": "g",
+        "litre": "l",
+        "liter": "l",
+        "fl oz": "fl oz",
+        "fl. oz": "fl oz",
     }
     val = raw.strip().replace(",", ".")
     unit = (unit_raw or "").lower().strip()
@@ -165,6 +183,7 @@ _NORMALIZERS = {
 # ---------------------------------------------------------------------------
 # Core extraction function
 # ---------------------------------------------------------------------------
+
 
 def extract_field(
     field_name: str,
@@ -276,9 +295,9 @@ def _extract_mrp_with_context(
                     score += pts
 
             norm = _normalize_mrp(raw)
-            candidates.append(_Candidate(
-                raw=raw, norm=norm, source=ocr_result, score=score, pattern_idx=pat_idx
-            ))
+            candidates.append(
+                _Candidate(raw=raw, norm=norm, source=ocr_result, score=score, pattern_idx=pat_idx)
+            )
             break  # most-specific pattern matched; move to next block
 
     if not candidates:
@@ -335,11 +354,23 @@ def _extract_mfr_with_roles(ocr_results: list[OCRResult]) -> ExtractionResult | 
     )
 
 
-def _extract_cc_with_context(ocr_results: list[OCRResult], context_window: int = 3) -> ExtractionResult | None:
+def _extract_cc_with_context(
+    ocr_results: list[OCRResult], context_window: int = 3
+) -> ExtractionResult | None:
     import re as _re
 
     # Context keywords that qualify a bare phone/email as consumer care
-    _CC_CONTEXT = {"consumer", "customer", "care", "helpline", "toll", "grievance", "feedback", "support", "contact"}
+    _CC_CONTEXT = {
+        "consumer",
+        "customer",
+        "care",
+        "helpline",
+        "toll",
+        "grievance",
+        "feedback",
+        "support",
+        "contact",
+    }
 
     @dataclass
     class _Candidate:
@@ -371,7 +402,7 @@ def _extract_cc_with_context(ocr_results: list[OCRResult], context_window: int =
                 lo = max(0, idx - context_window)
                 hi = min(len(ocr_results), idx + context_window + 1)
                 context_blob = " ".join(ocr_results[i].text.lower() for i in range(lo, hi))
-                
+
                 if any(kw in context_blob for kw in _CC_CONTEXT):
                     has_context = True
                     score = 5
@@ -382,10 +413,12 @@ def _extract_cc_with_context(ocr_results: list[OCRResult], context_window: int =
             norm = _normalize_cc(raw)
             if not has_context:
                 norm = f"UNVERIFIED_BARE_CONTACT:{norm}"
-                
-            candidates.append(_Candidate(
-                raw=raw, norm=norm, source=ocr_result, has_context=has_context, score=score
-            ))
+
+            candidates.append(
+                _Candidate(
+                    raw=raw, norm=norm, source=ocr_result, has_context=has_context, score=score
+                )
+            )
             break
 
     if not candidates:
@@ -399,4 +432,3 @@ def _extract_cc_with_context(ocr_results: list[OCRResult], context_window: int =
         normalized_value=best.norm,
         source_result=best.source,
     )
-

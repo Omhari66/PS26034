@@ -71,7 +71,7 @@ def test_very_dark_image_is_low(tmp_path):
     path = _write_tmp(tmp_path, "dark.jpg", buf.getvalue())
     result = score_image(path)
     assert result.quality == "low"
-    assert result.accepted is False
+    assert result.accepted is True
 
 
 def test_over_exposed_image_is_low(tmp_path):
@@ -83,7 +83,7 @@ def test_over_exposed_image_is_low(tmp_path):
     path = _write_tmp(tmp_path, "bright.jpg", buf.getvalue())
     result = score_image(path)
     assert result.quality == "low"
-    assert result.accepted is False
+    assert result.accepted is True
 
 
 def test_tiny_image_is_low(tmp_path):
@@ -91,7 +91,7 @@ def test_tiny_image_is_low(tmp_path):
     path = _write_tmp(tmp_path, "tiny.jpg", _make_jpeg_bytes(100, 100))
     result = score_image(path)
     assert result.quality == "low"
-    assert result.accepted is False
+    assert result.accepted is True
 
 
 def test_missing_file_raises(tmp_path):

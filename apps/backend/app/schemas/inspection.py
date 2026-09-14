@@ -126,8 +126,9 @@ class FieldCorrection(BaseModel):
     Structured field-level correction (Gap 9).
     Must be provided for any field flagged as REVIEW before submission is allowed (Gap 10).
     """
+
     field_name: str
-    action: Literal["confirmed", "corrected", "marked_absent"]
+    action: Literal["confirmed", "corrected", "marked_absent", "escalated"]
     ai_value: str | None = None
     corrected_value: str | None = None
     reviewer_id: str
@@ -141,6 +142,7 @@ class AnalyzeResponse(BaseModel):
     Returns draft OCR results and rule engine evaluation plus category sanity check,
     but does NOT persist the final report.
     """
+
     inspection_id: str
     category: str
     rule_version: str
@@ -167,9 +169,9 @@ class SetCategoryResponse(BaseModel):
 class ImageUploadResponse(BaseModel):
     image_id: str
     role: str
-    quality: str   # "high" | "medium" | "low"
+    quality: str  # "high" | "medium" | "low"
     accepted: bool
-    reason: str    # Human-readable quality note
+    reason: str  # Human-readable quality note
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +185,7 @@ class ReviewRequest(BaseModel):
     Creates a ReviewRecord; never edits the original report.
     CONTRACTS.md #7 / AGENTS.md rule 5.
     """
+
     overridden_decision: Decision
     reason: str = Field(..., min_length=10, description="Mandatory explanation (≥10 chars)")
     reviewer_id: str
@@ -190,6 +193,7 @@ class ReviewRequest(BaseModel):
 
 class ReviewRecordOut(BaseModel):
     """One supervisor review / override record."""
+
     id: str
     inspection_id: str
     reviewer_id: str
@@ -201,12 +205,14 @@ class ReviewRecordOut(BaseModel):
 
 class AuditTrailOut(BaseModel):
     """Full audit trail: original report + all review records in order."""
+
     inspection: InspectionReportOut
     reviews: list[ReviewRecordOut]
 
 
 class InspectionListItem(BaseModel):
     """Summary row for the dashboard inspection list."""
+
     inspection_id: str
     inspector_id: str
     category: str | None
@@ -219,5 +225,6 @@ class InspectionListItem(BaseModel):
 
 class InspectionListOut(BaseModel):
     """Paginated inspection list response."""
+
     items: list[InspectionListItem]
     total: int

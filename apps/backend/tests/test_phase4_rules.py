@@ -27,6 +27,8 @@ from app.services.applicability import (
     list_supported_categories,
 )
 
+FULL_COVERAGE = {"front": True, "back": True, "close_up": True}
+
 # ---------------------------------------------------------------------------
 # 1. Applicability engine — pure unit tests
 # ---------------------------------------------------------------------------
@@ -185,7 +187,11 @@ class TestVersionRegressionDoD:
         """v1.1 makes net_quantity required for textiles → NOT_FOUND = FAIL."""
         required = is_field_required("net_quantity", "textiles", "v1.1")
         result = evaluate_field(
-            self._net_quantity_not_found, "LM-NQ-001", "v1.1", required=required
+            self._net_quantity_not_found,
+            "LM-NQ-001",
+            "v1.1",
+            required=required,
+            coverage=FULL_COVERAGE,
         )
         assert result.decision == Decision.FAIL
         assert result.rule_version == "v1.1"
@@ -202,7 +208,11 @@ class TestVersionRegressionDoD:
         """v1.1 promotes consumer_care to required for drugs_pharma → NOT_FOUND = FAIL."""
         required = is_field_required("consumer_care", "drugs_pharma", "v1.1")
         result = evaluate_field(
-            self._consumer_care_not_found, "LM-CC-001", "v1.1", required=required
+            self._consumer_care_not_found,
+            "LM-CC-001",
+            "v1.1",
+            required=required,
+            coverage=FULL_COVERAGE,
         )
         assert result.decision == Decision.FAIL
         assert result.rule_version == "v1.1"
@@ -213,11 +223,15 @@ class TestVersionRegressionDoD:
         it was evaluated under. This is the append-only guarantee.
         """
         v1_result = evaluate_field(
-            self._consumer_care_not_found, "LM-CC-001", "v1.0",
+            self._consumer_care_not_found,
+            "LM-CC-001",
+            "v1.0",
             required=is_field_required("consumer_care", "drugs_pharma", "v1.0"),
         )
         v1_1_result = evaluate_field(
-            self._consumer_care_not_found, "LM-CC-001", "v1.1",
+            self._consumer_care_not_found,
+            "LM-CC-001",
+            "v1.1",
             required=is_field_required("consumer_care", "drugs_pharma", "v1.1"),
         )
         # Old report references old version

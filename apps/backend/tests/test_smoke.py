@@ -17,12 +17,8 @@ def test_compliance_engine_smoke():
     Output is checked for the expected OVERALL: REVIEW line
     (the existing smoke test produces REVIEW because consumer_care is NOT_VERIFIABLE).
     """
-    repo_root = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "..")
-    )
-    engine_path = os.path.join(
-        repo_root, "packages", "shared-schema", "compliance_engine.py"
-    )
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    engine_path = os.path.join(repo_root, "packages", "shared-schema", "compliance_engine.py")
 
     result = subprocess.run(
         [sys.executable, engine_path],
@@ -32,13 +28,10 @@ def test_compliance_engine_smoke():
     )
 
     assert result.returncode == 0, (
-        f"compliance_engine.py smoke test failed.\n"
-        f"stdout: {result.stdout}\n"
-        f"stderr: {result.stderr}"
+        f"compliance_engine.py smoke test failed.\nstdout: {result.stdout}\nstderr: {result.stderr}"
     )
     assert "OVERALL: REVIEW" in result.stdout, (
-        f"Expected 'OVERALL: REVIEW' in smoke test output.\n"
-        f"Got: {result.stdout}"
+        f"Expected 'OVERALL: REVIEW' in smoke test output.\nGot: {result.stdout}"
     )
     assert "mrp" in result.stdout, "Expected mrp field in smoke test output."
 
@@ -48,9 +41,7 @@ def test_shared_schema_import():
     Confirm packages.shared_schema imports cleanly and exports the expected symbols.
     This catches any __init__.py misconfiguration early.
     """
-    repo_root = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "..")
-    )
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
 

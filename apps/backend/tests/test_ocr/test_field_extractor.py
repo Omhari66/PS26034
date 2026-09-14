@@ -14,6 +14,7 @@ from app.ocr.field_extractor import ExtractionResult, extract_field
 # Helper: build a fake OCRResult from plain text
 # ---------------------------------------------------------------------------
 
+
 def _r(text: str, confidence: float = 0.90) -> OCRResult:
     """Synthetic OCRResult with a dummy bbox."""
     return OCRResult(text=text, bbox=(0, 0, 100, 20), confidence=confidence, engine_name="test")
@@ -32,8 +33,8 @@ class TestMRPExtraction:
         assert result.normalized_value == "149.00"
 
     def test_mrp_with_rupee_symbol(self):
-        """₹149 → '149.00'."""
-        result = extract_field("mrp", [_r("₹149")])
+        """MRP ... ₹149 → '149.00'."""
+        result = extract_field("mrp", [_r("MRP"), _r("₹149")])
         assert result is not None
         assert result.normalized_value == "149.00"
 
@@ -203,4 +204,5 @@ def test_extraction_result_carries_source_ocr_result():
 def test_extraction_result_is_frozen():
     """ExtractionResult should be a frozen dataclass."""
     import dataclasses
+
     assert dataclasses.is_dataclass(ExtractionResult)
