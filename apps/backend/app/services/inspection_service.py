@@ -17,12 +17,11 @@ Module boundary (CONTRACTS.md #5):
 import dataclasses
 from typing import TYPE_CHECKING
 
-from app.schemas.inspection import AnalyzeResponse
+from app.schemas.inspection import AnalyzeResponse, DecisionQualityAnalyticsOut
 
 if TYPE_CHECKING:
     from app.schemas.inspection import (
         AuditTrailOut,
-        DecisionQualityAnalyticsOut,
         FieldCorrection,
         InspectionListOut,
         ReviewRecordOut,
