@@ -1,7 +1,7 @@
 # Phase 2.5 — Calibration Report
 
 **Author:** Member 5 (Rahman - Legal & Compliance Engine) & Member 3 (OCR)  
-**Calibration Run Date:** 2026-09-14  
+**Calibration Run Date:** 2026-09-15  
 **Status:** ✅ Calibrated & Verified  
 **Dataset Location:** `data/calibration/` (50 samples)  
 

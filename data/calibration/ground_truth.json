@@ -11,8 +11,7 @@
       "product_name": "Glucose Biscuits",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "10.00",
@@ -30,8 +29,7 @@
       "product_name": "2-Minute Masala Noodles",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "14.00",
@@ -49,8 +47,7 @@
       "product_name": "Pasteurised Butter",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "56.00",
@@ -68,8 +65,7 @@
       "product_name": "Sunlite Refined Sunflower Oil",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "155.00",
@@ -87,8 +83,7 @@
       "product_name": "Vacuum Evaporated Iodised Salt",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "28.00",
@@ -106,8 +101,7 @@
       "product_name": "Original Germ Protection Soap",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "42.00",
@@ -125,8 +119,7 @@
       "product_name": "India Magic Masala Potato Chips",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "20.00",
@@ -144,8 +137,7 @@
       "product_name": "Strong Teeth Dental Cream",
       "panels_captured": {
         "front": true,
-        "back": true,
-        "close_up": true
+        "back": false
       },
       "ground_truth": {
         "mrp": "65.00",
