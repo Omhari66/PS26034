@@ -154,7 +154,6 @@ def validate_date(
 
     return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Date", evidence)
 
-
 def validate_manufacturer(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
 ) -> RuleResult:
@@ -171,20 +170,35 @@ def validate_manufacturer(
     if not pairs:
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Could not parse manufacturer roles from {evidence.value}", evidence)
         
-    has_mfr_or_packer = any("manufactured by" in p["role"] or "mfd" in p["role"] or "packed by" in p["role"] for p in pairs)
-    has_marketed = any("marketed by" in p["role"] for p in pairs)
+    # Check for the exact role keys output by your extractor (with underscores)
+    has_mfr_or_packer = any(p.get("role") in ["manufactured_by", "packed_by"] for p in pairs)
+    has_marketed = any(p.get("role") == "marketed_by" for p in pairs)
     
+    # Enforce the legal rule: Marketers do not satisfy the manufacturer requirement
     if not has_mfr_or_packer and has_marketed:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Found 'Marketed by' but missing required 'Manufactured by' or 'Packed by' legal entity", evidence)
+        return RuleResult(
+            rule.rule_id, 
+            rule.rule_version, 
+            evidence.field_name, 
+            Decision.REVIEW, 
+            "Found 'Marketed by' but missing required 'Manufactured by' or 'Packed by' legal entity", 
+            evidence
+        )
         
     if not has_mfr_or_packer:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Missing required 'Manufactured by' or 'Packed by' role", evidence)
+        return RuleResult(
+            rule.rule_id, 
+            rule.rule_version, 
+            evidence.field_name, 
+            Decision.REVIEW, 
+            "Missing required 'Manufactured by' or 'Packed by' role", 
+            evidence
+        )
 
     if evidence.ocr_confidence is not None and evidence.ocr_confidence < 0.6:
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"OCR confidence too low ({evidence.ocr_confidence:.2f})", evidence)
 
     return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Manufacturer/Packer", evidence)
-
 
 def validate_consumer_care(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
