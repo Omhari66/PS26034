@@ -48,8 +48,11 @@ export interface FieldCorrection {
   field_name: string;
   action: 'confirmed' | 'corrected' | 'marked_absent';
   value?: string | null;
+  ai_value?: string | null;
+  corrected_value?: string | null;
   reviewer_id: string;
   acknowledged: boolean;
+  timestamp?: string;
 }
 
 export interface InspectionReport {
@@ -109,4 +112,6 @@ export interface InspectionSession {
   images: CapturedImage[];
   draftReport: AnalyzeInspectionResponse | null;
   report: InspectionReport | null;
+  preEnteredValues?: Record<string, string>;
 }
+
