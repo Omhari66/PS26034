@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldCheck,
@@ -28,13 +28,53 @@ import {
 
 export const Navigation: React.FC = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
+  const [userInfo, setUserInfo] = useState<{ email: string; name: string; initials: string }>({
+    email: "supervisor@demo.ps26034",
+    name: "Supervisor Officer",
+    initials: "SO",
+  });
+
+  useEffect(() => {
+    const savedEmail = typeof window !== "undefined" ? localStorage.getItem("ps26034_user_email") || "supervisor@demo.ps26034" : "supervisor@demo.ps26034";
+    const savedName =
+      typeof window !== "undefined" && localStorage.getItem("ps26034_user_name")
+        ? localStorage.getItem("ps26034_user_name")!
+        : savedEmail
+            .split("@")[0]
+            .replace(/[._-]/g, " ")
+            .split(" ")
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ");
+
+    const parts = savedName.trim().split(" ");
+    const initials =
+      parts.length >= 2
+        ? (parts[0][0] + parts[1][0]).toUpperCase()
+        : (savedName.substring(0, 2) || "US").toUpperCase();
+
+    setUserInfo({ email: savedEmail, name: savedName, initials });
+  }, [pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("ps26034_auth_token");
+    localStorage.removeItem("ps26034_user_email");
+    localStorage.removeItem("ps26034_user_name");
+    setIsProfileOpen(false);
+    router.push("/login");
+  };
+
+  if (pathname === "/login") {
+    return null;
+  }
 
   const navItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard, badge: null },
-    { href: "/inspections", label: "Inspections Queue", icon: FileCheck2, badge: "Live" },
+    { href: "/", label: "Executive Dashboard", icon: LayoutDashboard, badge: null },
+    { href: "/inspections", label: "Inspections Registry", icon: FileCheck2, badge: "Live" },
+    { href: "/review", label: "REVIEW Studio", icon: Sparkles, badge: "Dual-OCR" },
     { href: "/analytics", label: "Decision Quality", icon: BarChart3, badge: "Gap 4" },
   ];
 
@@ -173,16 +213,16 @@ export const Navigation: React.FC = () => {
                 {/* User Avatar Circle with Emerald Status */}
                 <div className="relative shrink-0">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-400 text-black font-black text-xs flex items-center justify-center shadow-md border border-amber-300/40">
-                    OD
+                    {userInfo.initials}
                   </div>
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-[#09090d] animate-pulse" />
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="text-xs font-bold text-white truncate group-hover:text-amber-400 transition-colors">
-                    Omkar dubey
+                    {userInfo.name}
                   </div>
-                  <div className="text-[10px] text-zinc-400 truncate">jai599857@gmail.com</div>
+                  <div className="text-[10px] text-zinc-400 truncate">{userInfo.email}</div>
                 </div>
               </div>
 
@@ -211,13 +251,13 @@ export const Navigation: React.FC = () => {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative shrink-0">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-orange-400 text-black font-black text-sm flex items-center justify-center shadow-lg border border-amber-300/40">
-                      OD
+                      {userInfo.initials}
                     </div>
                     <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-[#181820]" />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-sm font-extrabold text-white truncate">Omkar dubey</h3>
-                    <p className="text-[11px] text-zinc-400 truncate">jai599857@gmail.com</p>
+                    <h3 className="text-sm font-extrabold text-white truncate">{userInfo.name}</h3>
+                    <p className="text-[11px] text-zinc-400 truncate">{userInfo.email}</p>
                   </div>
                 </div>
 
@@ -319,8 +359,8 @@ export const Navigation: React.FC = () => {
               {/* Red Divider Logout Button */}
               <div className="pt-2 border-t border-zinc-800">
                 <button
-                  onClick={() => setIsProfileOpen(false)}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 transition-all font-bold"
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 transition-all font-bold cursor-pointer"
                 >
                   <LogOut className="w-4 h-4 text-rose-400" />
                   <span>Logout</span>

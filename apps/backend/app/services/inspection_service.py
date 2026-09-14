@@ -286,6 +286,9 @@ def submit_inspection(
                 elif corr.action == "marked_absent":
                     rr.decision = Decision.FAIL
                     rr.reason = f"Field marked genuinely absent by inspector {corr.reviewer_id}"
+                elif corr.action == "escalated":
+                    rr.decision = Decision.REVIEW
+                    rr.reason = f"Escalated for supervisor review by inspector {corr.reviewer_id}"
 
         for rr in rule_results:
             corr = correction_map.get(rr.field_name)
