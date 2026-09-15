@@ -170,11 +170,21 @@ class TestUnauthenticated:
         assert res.status_code == 401
 
     def test_tampered_token_returns_401(self, auth_client):
-        """Modify the payload → signature mismatch → 401."""
+        """Modify the signature segment → HMAC mismatch → 401.
+
+        We flip a character near the middle of the signature (index 4),
+        not the last character — the last character can be a base64url
+        padding position where multiple characters decode to the same byte,
+        causing python-jose to accept the tampered token as valid.
+        """
         token = _inspector_token(auth_client)
-        # Flip one character in the signature segment
         parts = token.split(".")
-        parts[2] = parts[2][:-1] + ("A" if parts[2][-1] != "A" else "B")
+        sig = parts[2]
+        # Pick a stable interior index (4) and flip to a guaranteed-different char.
+        flip_idx = min(4, len(sig) - 1)
+        original_char = sig[flip_idx]
+        new_char = "A" if original_char != "A" else "B"
+        parts[2] = sig[:flip_idx] + new_char + sig[flip_idx + 1 :]
         tampered = ".".join(parts)
         res = auth_client.get(
             "/api/v1/inspections",
