@@ -1,0 +1,10 @@
+# Ignore heavy raw image files in calibration dataset (per PHASES.md Phase 2.5)
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.zip
+
+# Keep ground truth and documentation
+!ground_truth.json
+!.gitignore
