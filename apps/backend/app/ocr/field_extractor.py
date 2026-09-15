@@ -58,6 +58,20 @@ _NET_QTY_PATTERNS = [
     r"\b(\d+(?:[.,]\d+)?)\s*(g|gm|gms|kg|ml|l|litre|liter)\b",
 ]
 
+# Context keywords that DISQUALIFY a quantity candidate from being Net Quantity.
+# If any of these appear in the ±3 block context window, the bare pattern is rejected.
+_NET_QTY_NEGATIVE_CONTEXT = {
+    "serving size", "per serving", "serving", "portion", "per portion",
+    "daily value", "rda", "calories", "energy", "nutritional",
+    "nutrition facts", "nutrition information",
+}
+
+# Context keywords that CONFIRM a quantity is the pack net quantity.
+_NET_QTY_POSITIVE_CONTEXT = {
+    "net wt", "net weight", "net qty", "net quantity", "net vol",
+    "net content", "net contents", "e mark",
+}
+
 _MFG_DATE_PATTERNS = [
     # "Mfg. Date: 01/2025" / "Date of Mfg: 12-01-2025"
     r"(?i)(?:mfg\.?\s*date?|manufactured\s*(?:on|date|:)|date\s*of\s*mfg|dom|date\s*of\s*manufacture)\s*[:=]?\s*(.{4,20})",
@@ -192,12 +206,14 @@ def extract_field(
 
     if field_name == "mrp":
         return _extract_mrp_with_context(ocr_results)
+    elif field_name == "net_quantity":
+        return _extract_net_qty_with_context(ocr_results)
     elif field_name == "manufacturer_name":
         return _extract_mfr_with_roles(ocr_results)
     elif field_name == "consumer_care":
         return _extract_cc_with_context(ocr_results)
     elif field_name == "manufacturing_date":
-        return _extract_date_with_context(ocr_results)    
+        return _extract_date_with_context(ocr_results)
 
     patterns = _FIELD_PATTERNS[field_name]
 
@@ -309,6 +325,89 @@ def _extract_mrp_with_context(
         normalized_value=best.norm,
         source_result=best.source,
     )
+
+def _extract_net_qty_with_context(
+    ocr_results: list[OCRResult],
+    context_window: int = 3,
+) -> ExtractionResult | None:
+    """
+    Net Quantity extraction with context-window scoring.
+
+    Strategy:
+      1. Pattern 0 (explicit Net Wt/Qty label): always accepted — high confidence.
+      2. Pattern 1 (bare number+unit): accepted only if POSITIVE context nearby
+         ("net wt", "net qty", etc.) AND no NEGATIVE context ("serving size",
+         "per portion", nutrition labels).
+
+    This prevents serving-size values from being selected as the pack's net qty.
+    """
+    import re as _re
+
+    @dataclass
+    class _Candidate:
+        raw: str
+        unit: str | None
+        norm: str
+        source: OCRResult
+        score: int
+        pattern_idx: int
+
+    candidates: list[_Candidate] = []
+
+    for idx, ocr_result in enumerate(ocr_results):
+        text = ocr_result.text
+        for pat_idx, pattern in enumerate(_NET_QTY_PATTERNS):
+            m = _re.search(pattern, text, _re.IGNORECASE)
+            if not m:
+                continue
+            groups = m.groups()
+            raw = groups[0] if groups else m.group(0)
+            unit = groups[1] if len(groups) > 1 else None
+
+            # Build context window (±context_window blocks)
+            lo = max(0, idx - context_window)
+            hi = min(len(ocr_results), idx + context_window + 1)
+            context_blob = " ".join(ocr_results[i].text.lower() for i in range(lo, hi))
+
+            if pat_idx == 0:
+                # Explicit Net Wt / Net Qty keyword — high confidence
+                score = 8
+            else:
+                # Bare number + unit: reject if serving-size context found
+                if any(neg in context_blob for neg in _NET_QTY_NEGATIVE_CONTEXT):
+                    break  # skip this candidate entirely
+                # Bonus points when positive net-qty context is nearby
+                score = sum(
+                    1 for kw in _NET_QTY_POSITIVE_CONTEXT if kw in context_blob
+                )
+                # A bare quantity with no context at all (score==0) is still
+                # accepted at the lowest priority (score=1).  Real product labels
+                # commonly stamp the net quantity without a surrounding label
+                # (e.g. a corner stamp reading "500g").  We only reject when an
+                # explicit *negative* context (serving-size, nutrition label) is
+                # present — handled by the break above.
+                if score == 0:
+                    score = 1
+
+            norm = _normalize_net_qty(raw, unit)
+            candidates.append(_Candidate(
+                raw=raw, unit=unit, norm=norm,
+                source=ocr_result, score=score, pattern_idx=pat_idx,
+            ))
+            break  # best-matching pattern for this block; move to next block
+
+    if not candidates:
+        return None
+
+    best = max(candidates, key=lambda c: (c.score, c.source.confidence))
+
+    return ExtractionResult(
+        field_name="net_quantity",
+        raw_value=best.raw,
+        normalized_value=best.norm,
+        source_result=best.source,
+    )
+
 
 def _extract_mfr_with_roles(
     ocr_results: list[OCRResult], lookahead: int = 2

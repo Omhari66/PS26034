@@ -24,6 +24,8 @@ def test_compliance_engine_smoke():
         [sys.executable, engine_path],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        env={**os.environ, "PYTHONIOENCODING": "utf-8"},
         cwd=repo_root,
     )
 

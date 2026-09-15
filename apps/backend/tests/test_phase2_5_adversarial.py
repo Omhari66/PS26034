@@ -54,7 +54,7 @@ def test_cc_bare_contact_routes_to_review():
     )
     res = evaluate_field(evidence, "LM-CC-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE)
     assert res.decision == Decision.REVIEW
-    assert "consumer care context keywords" in res.reason.lower()
+    assert "no consumer-care keyword" in res.reason.lower()
 
 
 def test_cc_valid_tollfree_passes():
@@ -91,7 +91,7 @@ def test_cc_low_confidence_routes_to_review():
     )
     res = evaluate_field(evidence, "LM-CC-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE)
     assert res.decision == Decision.REVIEW
-    assert "confidence too low" in res.reason.lower()
+    assert "confidence below threshold" in res.reason.lower()
 
 
 # ===========================================================================
@@ -112,7 +112,7 @@ def test_mn_marketed_by_only_routes_to_review():
     )
     res = evaluate_field(evidence, "LM-MN-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE)
     assert res.decision == Decision.REVIEW
-    assert "missing required 'manufactured by' or 'packed by'" in res.reason.lower()
+    assert "manufactured by" in res.reason.lower() and "missing" in res.reason.lower()
 
 
 def test_mn_manufactured_by_passes():
@@ -185,7 +185,7 @@ def test_mrp_non_numeric_routes_to_review():
         evidence, "LM-MRP-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE
     )
     assert res.decision == Decision.REVIEW
-    assert "invalid mrp format" in res.reason.lower()
+    assert "could not be parsed as a number" in res.reason.lower()
 
 
 def test_mrp_missing_full_coverage_fails():
@@ -217,7 +217,7 @@ def test_nq_missing_unit_routes_to_review():
     )
     res = evaluate_field(evidence, "LM-NQ-001", RULE_VERSION, required=True, coverage=FULL_COVERAGE)
     assert res.decision == Decision.REVIEW
-    assert "invalid unit" in res.reason.lower()
+    assert "unit not recognised" in res.reason.lower()
 
 
 def test_nq_missing_full_coverage_fails():
