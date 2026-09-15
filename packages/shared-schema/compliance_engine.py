@@ -115,60 +115,126 @@ CONF_THRESHOLD: float = 0.60  # Phase 2.5 calibration run 2026-09-14; false-PASS
 # ---------------------------------------------------------------------------
 
 
+def _fmt_conf(confidence: float | None) -> str:
+    """Format OCR confidence as a human-readable percentage string."""
+    if confidence is None:
+        return "conf: N/A"
+    return f"conf: {confidence * 100:.0f}%"
+
+
 def validate_mrp(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
 ) -> RuleResult:
-    """MRP field validator."""
+    """MRP field validator — Phase 5 per-field dispatch."""
     if not evidence.value:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Missing value", evidence)
-    
-    try:
-        float(evidence.value)
-    except ValueError:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Invalid MRP format: {evidence.value}", evidence)
-    
-    if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"OCR confidence too low ({evidence.ocr_confidence:.2f})", evidence)
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            "MRP: value not extracted. OCR returned no candidate with sufficient MRP context score.",
+            evidence,
+        )
 
-    return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid MRP", evidence)
+    try:
+        mrp_float = float(evidence.value)
+    except ValueError:
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"MRP: extracted value '{evidence.value}' could not be parsed as a number. Manual verification required.",
+            evidence,
+        )
+
+    if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"MRP ₹{mrp_float:.2f}: OCR confidence below threshold ({_fmt_conf(evidence.ocr_confidence)} < {CONF_THRESHOLD * 100:.0f}%). "
+            "Value may be misread. Manual verification required.",
+            evidence,
+        )
+
+    engine_note = "Single-engine (cross-check passed as secondary confirmed value)." if not evidence.single_engine_only else ""
+    return RuleResult(
+        rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS,
+        f"MRP ₹{mrp_float:.2f} extracted and confirmed. {_fmt_conf(evidence.ocr_confidence)}. "
+        f"Context scoring selected this value over any offer/discount candidates. {engine_note}".strip(),
+        evidence,
+    )
+
 
 
 def validate_quantity(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
 ) -> RuleResult:
-    """Net quantity field validator."""
+    """Net quantity field validator — Phase 5 per-field dispatch."""
     if not evidence.value:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Missing value", evidence)
-    
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            "Net Quantity: value not extracted. No candidate with net-weight/quantity label context found.",
+            evidence,
+        )
+
     valid_units = ("g", "kg", "ml", "l", "fl oz")
     if not any(evidence.value.endswith(u) for u in valid_units):
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Invalid unit in quantity: {evidence.value}", evidence)
-    
-    if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"OCR confidence too low ({evidence.ocr_confidence:.2f})", evidence)
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Net Quantity '{evidence.value}': unit not recognised as a standard legal-metrology unit {valid_units}. "
+            "Manual verification required.",
+            evidence,
+        )
 
-    return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Net Quantity", evidence)
+    if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Net Quantity '{evidence.value}': OCR confidence below threshold ({_fmt_conf(evidence.ocr_confidence)} < {CONF_THRESHOLD * 100:.0f}%). "
+            "Manual verification required.",
+            evidence,
+        )
+
+    return RuleResult(
+        rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS,
+        f"Net Quantity '{evidence.value}' extracted with standard unit. {_fmt_conf(evidence.ocr_confidence)}. "
+        "Context scoring confirmed this is the pack quantity, not a serving-size value.",
+        evidence,
+    )
+
 
 
 def validate_date(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
 ) -> RuleResult:
-    """Manufacturing/packing date field validator."""
+    """Manufacturing/packing date field validator — Phase 5 per-field dispatch."""
     if not evidence.value:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Missing value", evidence)
-        
-    if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"OCR confidence too low ({evidence.ocr_confidence:.2f})", evidence)
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            "Manufacturing Date: value not extracted. No date candidate with MFD/PKD/DOM context was found. "
+            "Ensure the label's manufacturing date is visible in the captured images.",
+            evidence,
+        )
 
-    return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Date", evidence)
+    if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Manufacturing Date '{evidence.value}': OCR confidence below threshold ({_fmt_conf(evidence.ocr_confidence)} < {CONF_THRESHOLD * 100:.0f}%). "
+            "Date may be misread. Manual verification required.",
+            evidence,
+        )
+
+    return RuleResult(
+        rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS,
+        f"Manufacturing Date '{evidence.value}' extracted. {_fmt_conf(evidence.ocr_confidence)}. "
+        "Context scoring distinguished this from any Best Before / Expiry dates present on the label.",
+        evidence,
+    )
 
 def validate_manufacturer(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
 ) -> RuleResult:
-    """Manufacturer/packer field validator."""
+    """Manufacturer/packer field validator — Phase 5 per-field dispatch."""
     if not evidence.value:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Missing value", evidence)
-    
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            "Manufacturer Name: value not extracted. No 'Manufactured by' / 'Packed by' / 'Marketed by' role-entity pair found.",
+            evidence,
+        )
+
     import json
     try:
         pairs = json.loads(evidence.value)
@@ -184,59 +250,94 @@ def validate_manufacturer(
             pairs = [{"role": "marketed by", "entity": evidence.value}]
         else:
             pairs = [{"role": "manufactured by", "entity": evidence.value}]
-        
+
     if not pairs:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Could not parse manufacturer roles from {evidence.value}", evidence)
-        
-    # Check for the exact role keys output by your extractor (with underscores)
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Manufacturer Name: could not parse manufacturer roles from extracted value: '{evidence.value}'. "
+            "Manual verification required.",
+            evidence,
+        )
+
     has_mfr_or_packer = any(
         x in p.get("role", "").lower()
         for p in pairs
         for x in ["manufactured", "mfd", "mfr", "packed"]
     )
-
     has_marketed = any("marketed" in p.get("role", "").lower() for p in pairs)
-    
-    # Enforce the legal rule: Marketers do not satisfy the manufacturer requirement
+
+    # Legal rule: a Marketer alone does NOT satisfy the Manufacturer requirement.
     if not has_mfr_or_packer and has_marketed:
-        return RuleResult(
-            rule.rule_id, 
-            rule.rule_version, 
-            evidence.field_name, 
-            Decision.REVIEW, 
-            "Found 'Marketed by' but missing required 'Manufactured by' or 'Packed by' legal entity", 
-            evidence
+        marketed_entity = next(
+            (p.get("entity", "") for p in pairs if "marketed" in p.get("role", "").lower()), ""
         )
-        
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Manufacturer Name: found 'Marketed by: {marketed_entity}' but the required "
+            "'Manufactured by' or 'Packed by' legal entity is missing. "
+            "Legal Metrology Act requires the name and address of the manufacturer/packer.",
+            evidence,
+        )
+
     if not has_mfr_or_packer:
         return RuleResult(
-            rule.rule_id, 
-            rule.rule_version, 
-            evidence.field_name, 
-            Decision.REVIEW, 
-            "Missing required 'Manufactured by' or 'Packed by' role", 
-            evidence
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            "Manufacturer Name: no 'Manufactured by' or 'Packed by' role found in extracted text. "
+            "Manual verification required.",
+            evidence,
         )
 
     if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"OCR confidence too low ({evidence.ocr_confidence:.2f})", evidence)
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Manufacturer Name: OCR confidence below threshold ({_fmt_conf(evidence.ocr_confidence)} < {CONF_THRESHOLD * 100:.0f}%). "
+            "Entity name may be misread. Manual verification required.",
+            evidence,
+        )
 
-    return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Manufacturer/Packer", evidence)
+    role_summary = "; ".join(f"{p.get('role', '?').title()}: {p.get('entity', '?')}" for p in pairs)
+    return RuleResult(
+        rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS,
+        f"Manufacturer declaration verified. {_fmt_conf(evidence.ocr_confidence)}. "
+        f"Roles found: {role_summary}.",
+        evidence,
+    )
 
 def validate_consumer_care(
     evidence: FieldEvidence, coverage: dict, rule: FieldRule
 ) -> RuleResult:
-    """Consumer care contact field validator."""
+    """Consumer care contact field validator — Phase 5 per-field dispatch."""
     if not evidence.value:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Missing value", evidence)
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            "Consumer Care: no contact value extracted. No phone number or email with consumer-care context keyword was found. "
+            "Ensure the label's consumer helpline is visible in the captured images.",
+            evidence,
+        )
 
     if evidence.value.startswith("UNVERIFIED_BARE_CONTACT:"):
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, "Found phone/email but no consumer care context keywords nearby (may be factory/address phone)", evidence)
+        bare_contact = evidence.value.replace("UNVERIFIED_BARE_CONTACT:", "")
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Consumer Care: found contact '{bare_contact}' but no consumer-care keyword (e.g. 'Consumer Care:', 'Helpline:', 'Toll Free:') "
+            "was detected nearby. This may be a factory phone or address number. Manual verification required.",
+            evidence,
+        )
 
     if evidence.ocr_confidence is not None and evidence.ocr_confidence < CONF_THRESHOLD:
-        return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"OCR confidence too low ({evidence.ocr_confidence:.2f})", evidence)
+        return RuleResult(
+            rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW,
+            f"Consumer Care '{evidence.value}': OCR confidence below threshold ({_fmt_conf(evidence.ocr_confidence)} < {CONF_THRESHOLD * 100:.0f}%). "
+            "Contact may be misread. Manual verification required.",
+            evidence,
+        )
 
-    return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS, "Valid Consumer Care Contact", evidence)
+    return RuleResult(
+        rule.rule_id, rule.rule_version, evidence.field_name, Decision.PASS,
+        f"Consumer Care contact '{evidence.value}' extracted with consumer-care keyword context. "
+        f"{_fmt_conf(evidence.ocr_confidence)}. Contact is not a bare address/factory number.",
+        evidence,
+    )
 
 
 # Dispatch table — this is the ONLY place rule_ids are mapped to logic.
