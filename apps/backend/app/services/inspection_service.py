@@ -14,6 +14,8 @@ Module boundary (CONTRACTS.md #5):
   same output, always.
 """
 
+from __future__ import annotations
+
 import dataclasses
 from typing import TYPE_CHECKING
 
@@ -119,11 +121,19 @@ def _evidence_from_json(d: dict) -> FieldEvidenceOut:
 # ---------------------------------------------------------------------------
 
 
+class ReportCompletenessError(ValueError):
+    """
+    Raised when an inspection report violates the completeness invariant (CONTRACTS.md §7):
+    A field with state=FOUND must have a non-empty, non-blank extracted value.
+    Inherits from ValueError for backwards compatibility with existing callers.
+    """
+
+
 def _assert_report_complete(field_results: list) -> None:
     """
-    Raise ValueError if any field with state=FOUND has no extracted value in
-    the results. This catches template/serialization bugs before they produce
-    a report with a silently blank required field.
+    Raise ReportCompletenessError if any field with state=FOUND has no extracted value
+    or a blank/whitespace value in the results. This catches template/serialization
+    bugs before they produce a report with a silently blank required field.
 
     CONTRACTS.md §7: report generation must fail loudly, not silently render
     'Not available' for a field that the system actually extracted.
@@ -134,10 +144,17 @@ def _assert_report_complete(field_results: list) -> None:
             continue
         state = getattr(evidence, "state", None)
         value = getattr(evidence, "value", None)
-        if state in (EvidenceState.FOUND, "FOUND") and value is None:
-            raise ValueError(
-                f"Report completeness failure: field '{evidence.field_name}' "
-                f"has state=FOUND but extracted_value is None. "
+        is_found = state in (EvidenceState.FOUND, "FOUND")
+        is_empty = value is None or not str(value).strip()
+        if is_found and is_empty:
+            field_name = getattr(
+                evidence,
+                "field_name",
+                getattr(result, "field_name", "unknown"),
+            )
+            raise ReportCompletenessError(
+                f"Report completeness failure: field '{field_name}' "
+                f"has state=FOUND but extracted_value is None or blank. "
                 "This is a template or mapping bug — check _evidence_in_to_dataclass "
                 "and the OCR extraction pipeline."
             )
@@ -212,7 +229,7 @@ def submit_inspection(
     inspection_id: str,
     field_evidences_in: list[FieldEvidenceIn],
     coverage: dict,
-    corrections: list["FieldCorrection"] | None = None,
+    corrections: list[FieldCorrection] | None = None,
 ) -> InspectionReportOut | None:
     """
     Run the rule engine on the submitted evidence and store the report.
@@ -364,11 +381,41 @@ def get_report(db: Session, inspection_id: str) -> InspectionReportOut | None:
     return _inspection_to_report(inspection)
 
 
+def get_report_preview(db: Session, inspection_id: str) -> InspectionReportOut | None:
+    """
+    Retrieve and validate an inspection report for live preview.
+    Uses the exact same report loading and completeness validation as PDF generation.
+    Returns None if inspection not found or not submitted.
+    Raises ReportCompletenessError if completeness invariant is violated.
+    """
+    report = get_report(db, inspection_id)
+    if report is None:
+        return None
+    _assert_report_complete(report.field_results)
+    return report
+
+
+def generate_inspection_pdf(inspection_id: str, db: Session) -> bytes | None:
+    """
+    Generate printable PDF bytes for a submitted inspection report.
+    Validates completeness BEFORE rendering.
+    Returns None if inspection not found or not submitted.
+    Raises ReportCompletenessError if completeness invariant is violated.
+    """
+    from app.services.pdf_generator import build_inspection_pdf  # noqa: PLC0415
+
+    report = get_report(db, inspection_id)
+    if report is None:
+        return None
+    _assert_report_complete(report.field_results)
+    return build_inspection_pdf(report)
+
+
 def submit_via_ocr(
     db: Session,
     inspection_id: str,
     image_paths: list[str],
-    corrections: list["FieldCorrection"] | None = None,
+    corrections: list[FieldCorrection] | None = None,
 ) -> InspectionReportOut | None:
     """
     Phase 2 submission path: run OCR pipeline → FieldEvidence → rule engine.
@@ -570,7 +617,7 @@ def create_review(
     reviewer_id: str,
     overridden_decision: str,
     reason: str,
-) -> "ReviewRecordOut | None":
+) -> ReviewRecordOut | None:
     """
     Create a supervisor override record.
 
@@ -611,7 +658,7 @@ def create_review(
 def get_audit_trail(
     db: Session,
     inspection_id: str,
-) -> "AuditTrailOut | None":
+) -> AuditTrailOut | None:
     """
     Return the full audit trail: original report + all ReviewRecords in order.
 
@@ -654,7 +701,7 @@ def list_inspections(
     date_to: str | None = None,
     limit: int = 50,
     offset: int = 0,
-) -> "InspectionListOut":
+) -> InspectionListOut:
     """
     Paginated inspection list for the dashboard.
     Supports filtering by status, category, decision, inspector, and date range.

@@ -9,6 +9,7 @@
  * into every request via the `setTokenProvider` callback.
  */
 
+import Constants from 'expo-constants';
 import type {
   CreateInspectionResponse,
   ImageRole,
@@ -21,16 +22,19 @@ import type {
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 
-/**
- * Backend base URL.
- * - Local dev / Android emulator: http://10.0.2.2:8000
- * - Physical device on same WiFi: http://<your-machine-ip>:8000
- * - Production: set via app.config.ts env var
- *
- * TODO(phase7): read from expo-constants / app.config.ts for demo env.
- */
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:8000/api/v1';
+function getBaseUrl(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(':')[0];
+    return `http://${host}:8000/api/v1`;
+  }
+  return 'http://10.0.2.2:8000/api/v1';
+}
+
+const BASE_URL = getBaseUrl();
 
 // ─── Token provider (injected at app bootstrap) ───────────────────────────────
 
