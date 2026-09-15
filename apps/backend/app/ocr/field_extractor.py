@@ -376,13 +376,18 @@ def _extract_net_qty_with_context(
                 # Bare number + unit: reject if serving-size context found
                 if any(neg in context_blob for neg in _NET_QTY_NEGATIVE_CONTEXT):
                     break  # skip this candidate entirely
-                # Accept only if positive net-qty context is nearby
+                # Bonus points when positive net-qty context is nearby
                 score = sum(
                     1 for kw in _NET_QTY_POSITIVE_CONTEXT if kw in context_blob
                 )
+                # A bare quantity with no context at all (score==0) is still
+                # accepted at the lowest priority (score=1).  Real product labels
+                # commonly stamp the net quantity without a surrounding label
+                # (e.g. a corner stamp reading "500g").  We only reject when an
+                # explicit *negative* context (serving-size, nutrition label) is
+                # present — handled by the break above.
                 if score == 0:
-                    # No confirmatory context at all — too risky to accept bare value
-                    break
+                    score = 1
 
             norm = _normalize_net_qty(raw, unit)
             candidates.append(_Candidate(
