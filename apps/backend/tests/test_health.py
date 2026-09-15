@@ -9,7 +9,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 
 # Import the app from one level up
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
