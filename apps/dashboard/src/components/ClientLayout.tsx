@@ -14,7 +14,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
     const token = localStorage.getItem("ps26034_auth_token");
-    if (!token && pathname !== "/login") {
+    if (!token && pathname !== "/login" && pathname !== "/") {
       router.push("/login");
     }
   }, [pathname, router]);
@@ -23,19 +23,21 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-[#050508]" />;
   }
 
+  const isPublicPage = pathname === "/" || pathname === "/login";
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#050508]" />}>
-      {!isLoginPage && <Navigation />}
+      {!isPublicPage && <Navigation />}
       <main
         className={`flex-1 overflow-y-auto overflow-x-hidden min-w-0 outline-none focus:outline-none ${
-          isLoginPage
-            ? "w-full min-h-screen p-0 m-0 bg-[#050508]"
+          isPublicPage
+            ? "w-full min-h-screen p-0 m-0 bg-[#030306]"
             : "p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] mx-auto"
         }`}
       >
         {children}
       </main>
-      {!isLoginPage && <CommandPalette />}
+      {!isPublicPage && <CommandPalette />}
     </Suspense>
   );
 }

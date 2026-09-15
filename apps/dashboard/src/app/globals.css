@@ -165,3 +165,20 @@ div, button, input, select, svg, path {
 .animate-laser {
   animation: laser-scan 2.5s infinite linear;
 }
+
+/* Infinite Marquee Train Animation */
+@keyframes marquee-train {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee-train {
+  display: flex;
+  width: max-content;
+  animation: marquee-train 35s linear infinite;
+}
+

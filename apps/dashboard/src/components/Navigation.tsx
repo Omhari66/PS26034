@@ -65,10 +65,10 @@ export const Navigation: React.FC = () => {
     localStorage.removeItem("ps26034_user_email");
     localStorage.removeItem("ps26034_user_name");
     setIsProfileOpen(false);
-    router.push("/login");
+    router.push("/");
   };
 
-  if (pathname === "/login") {
+  if (pathname === "/" || pathname === "/login") {
     return null;
   }
 
