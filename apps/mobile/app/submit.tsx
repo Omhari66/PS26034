@@ -5,12 +5,19 @@
  *   - Thumbnails of all captured images with quality badges
  *   - Coverage summary
  *   - Confirmed category
- *   - Submit button → calls POST /inspections/{id}/submit
+ *   - Submit button → calls POST /inspections/{id}/analyze
  *
- * On success → navigates to ResultScreen with the report.
- * On error    → shows alert with message (never swallows errors silently).
+ * Offline-safe flow (Phase 7, Ticket 11):
+ *   1. Serialize the session to AsyncStorage BEFORE any network call.
+ *   2. Only after the local cache write resolves, fire the analyzeInspection
+ *      network request.
+ *   3. On network failure, update syncStatus / errorMessage and render an
+ *      in-screen error banner with a Retry button — no Alert.alert().
+ *
+ * On success → navigates to /reconcile with the draft report.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -42,6 +49,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function SubmitScreen() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'failed'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const session = activeSession;
   if (!session) {
@@ -69,15 +78,30 @@ export default function SubmitScreen() {
       return;
     }
     setSubmitting(true);
+    // Reset any previous failure state before each attempt.
+    setSyncStatus('idle');
+    setErrorMessage(null);
     try {
+      // ── Golden Rule: persist locally BEFORE any network call ──────────────
+      // This ensures the session survives even if the network request fails,
+      // allowing the inspector to retry without losing captured data.
+      await AsyncStorage.setItem(
+        '@inspection_' + session.inspectionId,
+        JSON.stringify(session),
+      );
+
+      // ── Network call: only reaches here after local cache is confirmed ─────
       const draft = await analyzeInspection(session.inspectionId);
       session.draftReport = draft;
       router.push('/reconcile');
     } catch (err) {
-      Alert.alert(
-        'Analysis Failed',
-        `The backend returned an error:\n\n${(err as Error).message}`,
-      );
+      // Surface the failure in-screen; never swallow it silently.
+      // No Alert.alert — inspector sees an inline banner with a Retry button.
+      const message =
+        (err as Error)?.message ??
+        'Network error — please check your connection and try again.';
+      setSyncStatus('failed');
+      setErrorMessage(message);
     } finally {
       setSubmitting(false);
     }
@@ -205,6 +229,26 @@ export default function SubmitScreen() {
           </View>
         )}
 
+        {/* Sync failure error banner — shown above the submit button */}
+        {syncStatus === 'failed' && (
+          <View style={styles.syncErrorBox}>
+            <Text style={styles.syncErrorText}>
+              ✕ Analysis failed: {errorMessage}
+            </Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.retryBtn,
+                pressed && styles.retryBtnPressed,
+              ]}
+              onPress={handleSubmit}
+              accessibilityRole="button"
+              accessibilityLabel="Retry analysis after network failure"
+            >
+              <Text style={styles.retryBtnText}>Retry Analysis</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Submit button */}
         <Pressable
           style={({ pressed }) => [
@@ -323,5 +367,32 @@ const styles = StyleSheet.create({
   submitBtnInner: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   submitBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
   disclaimer: { fontSize: 11, color: Colors.textTertiary, textAlign: 'center' },
+  // ── Sync failure error banner ─────────────────────────────────────────────
+  syncErrorBox: {
+    backgroundColor: Colors.fail + '18',
+    borderRadius: 12,
+    padding: 14,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.fail + '55',
+  },
+  syncErrorText: {
+    fontSize: 13,
+    color: Colors.fail,
+    lineHeight: 18,
+  },
+  retryBtn: {
+    backgroundColor: Colors.fail,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  retryBtnPressed: { opacity: 0.75 },
+  retryBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.white,
+  },
 });
 
