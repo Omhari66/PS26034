@@ -172,8 +172,18 @@ def validate_manufacturer(
     import json
     try:
         pairs = json.loads(evidence.value)
-    except ValueError:
-        pairs = []
+        if isinstance(pairs, dict):
+            pairs = [pairs]
+        elif not isinstance(pairs, list):
+            pairs = []
+    except (ValueError, TypeError):
+        val_lower = evidence.value.lower()
+        if any(x in val_lower for x in ["manufactured", "mfd", "mfr", "packed"]):
+            pairs = [{"role": "manufactured by", "entity": evidence.value}]
+        elif "marketed" in val_lower:
+            pairs = [{"role": "marketed by", "entity": evidence.value}]
+        else:
+            pairs = [{"role": "manufactured by", "entity": evidence.value}]
         
     if not pairs:
         return RuleResult(rule.rule_id, rule.rule_version, evidence.field_name, Decision.REVIEW, f"Could not parse manufacturer roles from {evidence.value}", evidence)

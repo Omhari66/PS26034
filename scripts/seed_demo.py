@@ -76,7 +76,7 @@ DEMO_SCENARIOS = [
             {
                 "field_name": "manufacturer_name",
                 "state": "FOUND",
-                "value": "ACME Foods Pvt Ltd",
+                "value": json.dumps([{"role": "Manufactured by", "entity": "ACME Foods Pvt Ltd"}]),
                 "ocr_confidence": 0.96,
                 "ocr_engine": "easyocr",
                 "source_image": "front.jpg",
@@ -133,7 +133,7 @@ DEMO_SCENARIOS = [
             {
                 "field_name": "manufacturer_name",
                 "state": "FOUND",
-                "value": "Sunrise Industries",
+                "value": json.dumps([{"role": "Manufactured by", "entity": "Sunrise Industries"}]),
                 "ocr_confidence": 0.92,
                 "ocr_engine": "easyocr",
                 "source_image": "front.jpg",
@@ -189,7 +189,7 @@ DEMO_SCENARIOS = [
             {
                 "field_name": "manufacturer_name",
                 "state": "FOUND",
-                "value": "Bharat Spices Ltd",
+                "value": json.dumps([{"role": "Manufactured by", "entity": "Bharat Spices Ltd"}]),
                 "ocr_confidence": 0.90,
                 "ocr_engine": "easyocr",
                 "source_image": "front.jpg",
@@ -205,6 +205,20 @@ DEMO_SCENARIOS = [
                 "source_image": "front.jpg",
                 "bbox": [60, 490, 320, 525],
                 "image_quality": "high",
+            },
+        ],
+        "corrections": [
+            {
+                "field_name": "mrp",
+                "action": "escalated",
+                "reviewer_id": "SEED_REVIEW_demo_inspector",
+                "acknowledged": True,
+            },
+            {
+                "field_name": "manufacturing_date",
+                "action": "escalated",
+                "reviewer_id": "SEED_REVIEW_demo_inspector",
+                "acknowledged": True,
             },
         ],
     },
@@ -287,12 +301,16 @@ def seed(base: str) -> None:
         )
 
         # Submit
+        submit_payload = {
+            "coverage": scenario["coverage"],
+            "field_evidences": scenario["field_evidences"],
+        }
+        if "corrections" in scenario:
+            submit_payload["corrections"] = scenario["corrections"]
+
         result = _request(
             "POST", f"{api}/inspections/{iid}/submit",
-            {
-                "coverage": scenario["coverage"],
-                "field_evidences": scenario["field_evidences"],
-            },
+            submit_payload,
             token=inspector_token,
         )
         decision = result["overall_decision"]

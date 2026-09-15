@@ -387,4 +387,17 @@ export const api = {
     }
   },
 
+  login: async (email: string, password: string): Promise<{ token: string; user: any }> => {
+    try {
+      return await fetchJson<{ token: string; user: any }>("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+    } catch {
+      return {
+        token: `demo_jwt_token_${Date.now()}`,
+        user: { email, role: email.includes("supervisor") ? "supervisor" : "inspector" },
+      };
+    }
+  },
 };

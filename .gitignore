@@ -37,6 +37,11 @@ apps/backend/alembic/versions/*.py
 .idea/
 *.swp
 
+# SQLite Database
+*.db
+dev.db
+apps/backend/dev.db
+
 # OS
 .DS_Store
 Thumbs.db

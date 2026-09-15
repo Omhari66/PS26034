@@ -21,6 +21,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -127,6 +128,41 @@ export default function SubmitScreen() {
             </View>
           </View>
         </View>
+
+        {/* Pre-Entered Values Input Card for Reconciliation */}
+        <View style={styles.card}>
+          <Text style={styles.sectionLabel}>Pre-Entered Known Values (Optional)</Text>
+          <Text style={styles.preEntrySubtitle}>
+            Values typed here will be cross-checked against AI extracted values.
+          </Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabelText}>MRP (e.g. ₹180)</Text>
+            <TextInput
+              style={styles.preInput}
+              placeholder="e.g. 180"
+              placeholderTextColor={Colors.textTertiary}
+              value={session.preEnteredValues?.mrp || ''}
+              onChangeText={(val) => {
+                if (!session.preEnteredValues) session.preEnteredValues = {};
+                session.preEnteredValues.mrp = val;
+              }}
+            />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabelText}>Net Quantity (e.g. 500g)</Text>
+            <TextInput
+              style={styles.preInput}
+              placeholder="e.g. 500g"
+              placeholderTextColor={Colors.textTertiary}
+              value={session.preEnteredValues?.net_quantity || ''}
+              onChangeText={(val) => {
+                if (!session.preEnteredValues) session.preEnteredValues = {};
+                session.preEnteredValues.net_quantity = val;
+              }}
+            />
+          </View>
+        </View>
+
 
         {/* Image thumbnails */}
         <Text style={styles.thumbTitle}>Captured Images</Text>
@@ -251,6 +287,30 @@ const styles = StyleSheet.create({
     borderColor: Colors.fail + '66',
   },
   warningTextFailed: { fontSize: 13, color: Colors.fail, lineHeight: 18 },
+  preEntrySubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  inputGroup: {
+    gap: 4,
+    marginTop: 6,
+  },
+  inputLabelText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  preInput: {
+    backgroundColor: Colors.surfaceElevated,
+    borderColor: Colors.border,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: Colors.textPrimary,
+    fontSize: 14,
+  },
   submitBtn: {
     backgroundColor: Colors.primary,
     padding: 18,
@@ -264,3 +324,4 @@ const styles = StyleSheet.create({
   submitBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
   disclaimer: { fontSize: 11, color: Colors.textTertiary, textAlign: 'center' },
 });
+

@@ -14,8 +14,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../constants/colors';
 import { submitInspection } from '../lib/api';
+import { checkCategoryMismatch } from '../lib/category_checker';
 import type { FieldCorrection, RuleResult } from '../lib/types';
 import { activeSession } from './index';
+
+function valuesDisagree(val1?: string | null, val2?: string | null): boolean {
+  if (!val1 || !val2) return false;
+  const n1 = val1.toString().toLowerCase().replace(/[₹\s,rs\.]/gi, '').trim();
+  const n2 = val2.toString().toLowerCase().replace(/[₹\s,rs\.]/gi, '').trim();
+  return n1 !== n2;
+}
 
 export default function ReconcileScreen() {
   const router = useRouter();
@@ -38,23 +46,50 @@ export default function ReconcileScreen() {
   }
 
   const { draftReport } = session;
-  const reviewFields = draftReport.field_results.filter((fr) => fr.decision === 'REVIEW');
-  const acknowledgedCount = reviewFields.filter((fr) => corrections[fr.field_name]?.acknowledged).length;
-  const allAcknowledged = reviewFields.length === 0 || acknowledgedCount === reviewFields.length;
+  const preEntered = session.preEnteredValues || {};
+
+  // Combine OCR text for local category sanity check
+  const combinedOcrText = draftReport.field_results
+    .map((fr) => [fr.evidence.value, ...(fr.evidence.candidates || [])].filter(Boolean).join(' '))
+    .join(' ');
+  const categoryCheck = checkCategoryMismatch(combinedOcrText, session.category || '');
+  const showCategoryWarning = draftReport.category_mismatch || categoryCheck.isMismatch;
+
+  // Identify fields needing reconciliation:
+  // 1. Fields where AI decision === 'REVIEW'
+  // 2. Fields where inspector pre-entered value and AI extracted value disagree
+  const reconcileFields = draftReport.field_results.filter((fr) => {
+    const inspectorVal = preEntered[fr.field_name];
+    const aiVal = fr.evidence.value;
+    const isDiff = valuesDisagree(inspectorVal, aiVal);
+    return fr.decision === 'REVIEW' || isDiff;
+  });
+
+  // Ticket 6: Check that every REVIEW / disagreement field has acknowledged === true
+  const acknowledgedCount = reconcileFields.filter((fr) => corrections[fr.field_name]?.acknowledged).length;
+  const allAcknowledged = reconcileFields.length === 0 || acknowledgedCount === reconcileFields.length;
 
   function handleAction(
     fieldName: string,
     action: 'confirmed' | 'corrected' | 'marked_absent',
-    value?: string
+    aiValue: string | null,
+    enteredVal?: string
   ) {
+    const isCorrected = action === 'corrected';
+    const correctedValue = isCorrected ? (enteredVal !== undefined ? enteredVal : preEntered[fieldName] || '') : null;
+    const isAck = action === 'confirmed' || action === 'marked_absent' || (isCorrected && (correctedValue !== null && correctedValue.trim() !== ''));
+
     setCorrections((prev) => ({
       ...prev,
       [fieldName]: {
         field_name: fieldName,
         action,
-        value,
-        reviewer_id: 'inspector_001', // Hardcoded for MVP, Phase 6 adds auth
-        acknowledged: true,
+        ai_value: aiValue,
+        corrected_value: correctedValue,
+        value: isCorrected ? correctedValue : (action === 'confirmed' ? aiValue : null),
+        reviewer_id: 'inspector_001',
+        acknowledged: isAck,
+        timestamp: new Date().toISOString(),
       },
     }));
   }
@@ -62,7 +97,10 @@ export default function ReconcileScreen() {
   async function handleSubmit() {
     if (!session) return;
     if (!allAcknowledged) {
-      Alert.alert('Incomplete', 'Please acknowledge all fields marked for REVIEW.');
+      Alert.alert(
+        'Submission Blocked',
+        'Please verify all flagged fields before submitting.'
+      );
       return;
     }
 
@@ -91,37 +129,37 @@ export default function ReconcileScreen() {
         <View style={styles.header}>
           <View style={styles.badge}>
             <Ionicons name="git-compare-outline" size={14} color={Colors.review} />
-            <Text style={styles.badgeText}>HUMAN RECONCILIATION</Text>
+            <Text style={styles.badgeText}>EVIDENCE RECONCILIATION</Text>
           </View>
-          <Text style={styles.title}>Review Draft Report</Text>
+          <Text style={styles.title}>Reconcile Disagreements</Text>
           <Text style={styles.subtitle}>
-            {reviewFields.length === 0
-              ? 'All AI extraction rules passed with high confidence.'
-              : `Verify AI extractions for ${reviewFields.length} field${reviewFields.length > 1 ? 's' : ''} flagged for review.`}
+            {reconcileFields.length === 0
+              ? 'All inspector inputs and AI extractions match with high confidence.'
+              : `Review and resolve ${reconcileFields.length} field disagreement${reconcileFields.length > 1 ? 's' : ''} or REVIEW item${reconcileFields.length > 1 ? 's' : ''}.`}
           </Text>
         </View>
 
-        {/* Category Mismatch Warning Box - Prominent Amber/Orange Alert */}
-        {draftReport.category_mismatch && (
+        {/* Feature 2: Soft Yellow Category Sanity Warning Box */}
+        {showCategoryWarning && (
           <View style={styles.warningBox}>
             <View style={styles.warningHeaderRow}>
               <Ionicons name="warning" size={22} color={Colors.qualityMedium} />
-              <Text style={styles.warningTitle}>Category Mismatch Detected</Text>
+              <Text style={styles.warningTitle}>Category Mismatch Warning</Text>
             </View>
             <Text style={styles.warningText}>
-              The AI detected packaging keywords that do not strongly match your selected category.
-              Please verify field values carefully before finalizing.
+              {categoryCheck.warningMessage ||
+                'The AI detected packaging keywords that do not strongly match your selected category. Please verify field values carefully before finalizing. (Your confirmed category remains active)'}
             </Text>
           </View>
         )}
 
-        {/* Progress Bar Header when review fields exist */}
-        {reviewFields.length > 0 && (
+        {/* Progress Bar Header when reconciliation fields exist */}
+        {reconcileFields.length > 0 && (
           <View style={styles.progressCard}>
             <View style={styles.progressRow}>
               <Text style={styles.progressLabel}>Reconciliation Progress</Text>
               <Text style={styles.progressCounter}>
-                {acknowledgedCount} of {reviewFields.length} resolved
+                {acknowledgedCount} of {reconcileFields.length} resolved
               </Text>
             </View>
             <View style={styles.progressBarTrack}>
@@ -129,7 +167,7 @@ export default function ReconcileScreen() {
                 style={[
                   styles.progressBarFill,
                   {
-                    width: `${(acknowledgedCount / reviewFields.length) * 100}%`,
+                    width: `${(acknowledgedCount / reconcileFields.length) * 100}%`,
                     backgroundColor: allAcknowledged ? Colors.pass : Colors.primary,
                   },
                 ]}
@@ -138,20 +176,23 @@ export default function ReconcileScreen() {
           </View>
         )}
 
-        {/* Review Fields List or Success State */}
-        {reviewFields.length === 0 ? (
+        {/* Reconciliation Fields List or Success State */}
+        {reconcileFields.length === 0 ? (
           <View style={styles.successBox}>
             <View style={styles.successIconCircle}>
               <Ionicons name="checkmark-circle" size={36} color={Colors.pass} />
             </View>
-            <Text style={styles.successTitle}>Ready to Finalize</Text>
+            <Text style={styles.successTitle}>No Disagreements Detected</Text>
             <Text style={styles.successText}>
-              All fields were processed automatically. No manual reconciliation is required.
+              All inspector pre-entered values match AI OCR extractions seamlessly. Ready for final report submission.
             </Text>
           </View>
         ) : (
           <View style={styles.fieldList}>
-            {reviewFields.map((fr: RuleResult) => {
+            {reconcileFields.map((fr: RuleResult) => {
+              const inspectorVal = preEntered[fr.field_name];
+              const aiVal = fr.evidence.value;
+              const hasDiff = valuesDisagree(inspectorVal, aiVal);
               const currentCorrection = corrections[fr.field_name];
               const isConfirmed = currentCorrection?.action === 'confirmed';
               const isCorrecting = currentCorrection?.action === 'corrected';
@@ -171,37 +212,50 @@ export default function ReconcileScreen() {
                     {isResolved ? (
                       <View style={styles.resolvedBadge}>
                         <Ionicons name="checkmark" size={12} color={Colors.pass} />
-                        <Text style={styles.resolvedBadgeText}>Resolved</Text>
+                        <Text style={styles.resolvedBadgeText}>Resolved ({currentCorrection.action})</Text>
                       </View>
                     ) : (
                       <View style={styles.reviewBadge}>
-                        <Text style={styles.reviewBadgeText}>Needs Review</Text>
+                        <Text style={styles.reviewBadgeText}>Needs Resolution</Text>
                       </View>
                     )}
                   </View>
 
-                  {/* AI Uncertainty Reason */}
-                  <View style={styles.reasonBox}>
-                    <Ionicons name="information-circle-outline" size={16} color={Colors.review} style={styles.reasonIcon} />
-                    <Text style={styles.reasonText}>{fr.reason}</Text>
-                  </View>
-
-                  {/* Extracted Value Callout */}
-                  {fr.evidence.value ? (
-                    <View style={styles.evidenceBox}>
-                      <Text style={styles.evidenceLabel}>Extracted Value:</Text>
-                      <Text style={styles.evidenceValue}>"{fr.evidence.value}"</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.evidenceBoxEmpty}>
-                      <Text style={styles.evidenceLabel}>Extracted Value:</Text>
-                      <Text style={styles.evidenceValueEmpty}>Not Detected</Text>
+                  {/* Disagreement Callout Banner */}
+                  {hasDiff && (
+                    <View style={styles.diffBanner}>
+                      <Ionicons name="git-compare" size={18} color={Colors.qualityMedium} />
+                      <Text style={styles.diffBannerText}>
+                        You entered <Text style={styles.diffValueHighlight}>{inspectorVal}</Text>, AI detected <Text style={styles.diffValueHighlight}>{aiVal || 'Not Detected'}</Text> — confirm one
+                      </Text>
                     </View>
                   )}
 
-                  {/* Distinct Color-Coded Action Buttons */}
+                  {/* AI Uncertainty Reason */}
+                  {!hasDiff && (
+                    <View style={styles.reasonBox}>
+                      <Ionicons name="information-circle-outline" size={16} color={Colors.review} style={styles.reasonIcon} />
+                      <Text style={styles.reasonText}>{fr.reason}</Text>
+                    </View>
+                  )}
+
+                  {/* Values Display */}
+                  <View style={styles.valuesComparisonBox}>
+                    {inspectorVal ? (
+                      <View style={styles.valueRow}>
+                        <Text style={styles.valueLabel}>Inspector Entered:</Text>
+                        <Text style={styles.valueTextInspector}>{inspectorVal}</Text>
+                      </View>
+                    ) : null}
+                    <View style={styles.valueRow}>
+                      <Text style={styles.valueLabel}>AI Detected:</Text>
+                      <Text style={styles.valueTextAi}>{aiVal ? `"${aiVal}"` : 'Not Detected'}</Text>
+                    </View>
+                  </View>
+
+                  {/* Three Required Actions */}
                   <View style={styles.actionsRow}>
-                    {/* 1. Confirm AI (Green) */}
+                    {/* 1. Confirm AI Value */}
                     <Pressable
                       style={({ pressed }) => [
                         styles.actionBtn,
@@ -209,7 +263,7 @@ export default function ReconcileScreen() {
                         isConfirmed && styles.btnConfirmActive,
                         pressed && styles.btnPressed,
                       ]}
-                      onPress={() => handleAction(fr.field_name, 'confirmed')}
+                      onPress={() => handleAction(fr.field_name, 'confirmed', aiVal)}
                     >
                       <Ionicons
                         name={isConfirmed ? "checkmark-circle" : "checkmark-circle-outline"}
@@ -223,11 +277,11 @@ export default function ReconcileScreen() {
                           isConfirmed && styles.btnConfirmTextActive,
                         ]}
                       >
-                        Confirm AI
+                        Confirm AI Value
                       </Text>
                     </Pressable>
 
-                    {/* 2. Correct (Blue) */}
+                    {/* 2. Enter My Value */}
                     <Pressable
                       style={({ pressed }) => [
                         styles.actionBtn,
@@ -235,7 +289,7 @@ export default function ReconcileScreen() {
                         isCorrecting && styles.btnCorrectActive,
                         pressed && styles.btnPressed,
                       ]}
-                      onPress={() => handleAction(fr.field_name, 'corrected', currentCorrection?.value || '')}
+                      onPress={() => handleAction(fr.field_name, 'corrected', aiVal, currentCorrection?.corrected_value || inspectorVal || '')}
                     >
                       <Ionicons
                         name={isCorrecting ? "create" : "create-outline"}
@@ -249,11 +303,11 @@ export default function ReconcileScreen() {
                           isCorrecting && styles.btnCorrectTextActive,
                         ]}
                       >
-                        Correct
+                        Enter My Value
                       </Text>
                     </Pressable>
 
-                    {/* 3. Mark Absent (Red/Amber) */}
+                    {/* 3. Mark Field Absent */}
                     <Pressable
                       style={({ pressed }) => [
                         styles.actionBtn,
@@ -261,7 +315,7 @@ export default function ReconcileScreen() {
                         isAbsent && styles.btnAbsentActive,
                         pressed && styles.btnPressed,
                       ]}
-                      onPress={() => handleAction(fr.field_name, 'marked_absent')}
+                      onPress={() => handleAction(fr.field_name, 'marked_absent', aiVal)}
                     >
                       <Ionicons
                         name={isAbsent ? "close-circle" : "close-circle-outline"}
@@ -275,24 +329,24 @@ export default function ReconcileScreen() {
                           isAbsent && styles.btnAbsentTextActive,
                         ]}
                       >
-                        Mark Absent
+                        Mark Field Absent
                       </Text>
                     </Pressable>
                   </View>
 
-                  {/* TextInput when Correct is chosen */}
+                  {/* Structured TextInput when Enter My Value is chosen */}
                   {isCorrecting && (
                     <View style={styles.inputContainer}>
                       <View style={styles.inputHeader}>
                         <Ionicons name="pencil-outline" size={14} color={Colors.primary} />
-                        <Text style={styles.inputLabel}>Enter Correct Value</Text>
+                        <Text style={styles.inputLabel}>Enter My Value (Structured Input)</Text>
                       </View>
                       <TextInput
                         style={styles.textInput}
-                        placeholder="Type accurate measurement or text..."
+                        placeholder="Type accurate measurement or field value..."
                         placeholderTextColor={Colors.textTertiary}
-                        value={currentCorrection?.value || ''}
-                        onChangeText={(val) => handleAction(fr.field_name, 'corrected', val)}
+                        value={currentCorrection?.corrected_value || ''}
+                        onChangeText={(val) => handleAction(fr.field_name, 'corrected', aiVal, val)}
                         autoFocus
                       />
                     </View>
@@ -300,6 +354,14 @@ export default function ReconcileScreen() {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {/* Feature 1: REVIEW Field Acknowledgment Blocker Banner */}
+        {!allAcknowledged && (
+          <View style={styles.blockerBanner}>
+            <Ionicons name="hand-left-outline" size={20} color={Colors.qualityMedium} />
+            <Text style={styles.blockerText}>Please verify all flagged fields before submitting.</Text>
           </View>
         )}
 
@@ -501,10 +563,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     elevation: 3,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   fieldCardResolved: {
     borderColor: Colors.border,
@@ -552,6 +610,28 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+  diffBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 159, 10, 0.15)',
+    borderColor: Colors.qualityMedium,
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  diffBannerText: {
+    fontSize: 13,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 18,
+  },
+  diffValueHighlight: {
+    fontWeight: '800',
+    color: Colors.qualityMedium,
+  },
   reasonBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -570,40 +650,32 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     flex: 1,
   },
-  evidenceBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  valuesComparisonBox: {
     backgroundColor: Colors.background,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    padding: 12,
+    borderRadius: 10,
     marginBottom: 14,
     gap: 6,
   },
-  evidenceBoxEmpty: {
+  valueRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.background,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 14,
-    gap: 6,
   },
-  evidenceLabel: {
+  valueLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: Colors.textTertiary,
   },
-  evidenceValue: {
+  valueTextInspector: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.qualityMedium,
+  },
+  valueTextAi: {
     fontSize: 13,
     fontWeight: '700',
     color: Colors.textPrimary,
-  },
-  evidenceValueEmpty: {
-    fontSize: 13,
-    fontStyle: 'italic',
-    color: Colors.textTertiary,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -615,28 +687,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     borderRadius: 10,
-    borderWidth: 1.5,
+    borderWidth: 1,
     gap: 4,
   },
-  btnPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.98 }],
-  },
-  actionBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  /* Confirm AI Button Styles (Green) */
   btnConfirm: {
-    backgroundColor: Colors.pass + '12',
-    borderColor: Colors.pass + '50',
+    borderColor: Colors.pass,
+    backgroundColor: Colors.pass + '15',
   },
   btnConfirmActive: {
     backgroundColor: Colors.pass,
-    borderColor: Colors.pass,
   },
   btnConfirmText: {
     color: Colors.pass,
@@ -644,15 +705,12 @@ const styles = StyleSheet.create({
   btnConfirmTextActive: {
     color: Colors.black,
   },
-
-  /* Correct Button Styles (Blue) */
   btnCorrect: {
-    backgroundColor: Colors.primary + '12',
-    borderColor: Colors.primary + '50',
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '15',
   },
   btnCorrectActive: {
     backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
   },
   btnCorrectText: {
     color: Colors.primary,
@@ -660,15 +718,12 @@ const styles = StyleSheet.create({
   btnCorrectTextActive: {
     color: Colors.white,
   },
-
-  /* Mark Absent Button Styles (Red) */
   btnAbsent: {
-    backgroundColor: Colors.fail + '12',
-    borderColor: Colors.fail + '50',
+    borderColor: Colors.fail,
+    backgroundColor: Colors.fail + '15',
   },
   btnAbsentActive: {
     backgroundColor: Colors.fail,
-    borderColor: Colors.fail,
   },
   btnAbsentText: {
     color: Colors.fail,
@@ -676,59 +731,71 @@ const styles = StyleSheet.create({
   btnAbsentTextActive: {
     color: Colors.white,
   },
-
+  btnPressed: {
+    opacity: 0.7,
+  },
+  actionBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   inputContainer: {
     marginTop: 14,
     backgroundColor: Colors.surfaceElevated,
     padding: 12,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: Colors.primary + '60',
+    borderColor: Colors.primary,
+    gap: 8,
   },
   inputHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 8,
   },
   inputLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.primary,
   },
   textInput: {
-    borderWidth: 1,
+    backgroundColor: Colors.surface,
     borderColor: Colors.border,
+    borderWidth: 1,
     borderRadius: 8,
-    paddingVertical: 8,
     paddingHorizontal: 12,
-    fontSize: 14,
+    paddingVertical: 10,
     color: Colors.textPrimary,
-    backgroundColor: Colors.background,
+    fontSize: 14,
+  },
+  blockerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 159, 10, 0.18)',
+    borderColor: Colors.qualityMedium,
+    borderWidth: 1.5,
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 8,
+  },
+  blockerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.qualityMedium,
+    flex: 1,
   },
   submitBtn: {
     backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   submitBtnDisabled: {
     backgroundColor: Colors.surfaceElevated,
-    borderColor: Colors.border,
-    borderWidth: 1,
-    shadowOpacity: 0,
-    elevation: 0,
+    opacity: 0.6,
   },
   submitBtnPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.99 }],
+    opacity: 0.8,
   },
   submitBtnContent: {
     flexDirection: 'row',
@@ -736,12 +803,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   submitBtnText: {
-    color: Colors.white,
     fontSize: 16,
     fontWeight: '700',
+    color: Colors.white,
   },
   submitBtnTextDisabled: {
     color: Colors.textTertiary,
   },
 });
-
